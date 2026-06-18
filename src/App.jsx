@@ -202,9 +202,17 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 860 : false)
+  const [listening, setListening] = useState(false)
 
   const inputRef = useRef(null)
   const lastMessageRef = useRef(null)
+  const recognitionRef = useRef(null)
+
+  // Browser support check for voice input (Web Speech API)
+  const SpeechRecognitionAPI = typeof window !== 'undefined'
+    ? (window.SpeechRecognition || window.webkitSpeechRecognition)
+    : null
+  const speechSupported = !!SpeechRecognitionAPI
 
   // Track viewport width so side panels hide on small screens
   useEffect(() => {
@@ -262,6 +270,43 @@ export default function App() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Start or stop voice input. Uses the browser's built-in speech
+  // recognition — no extra API calls or cost. Transcribed text lands
+  // in the same input box as typing, so sendMessage works unchanged.
+  function toggleListening() {
+    if (!speechSupported || !persona || loading) return
+
+    if (listening) {
+      recognitionRef.current?.stop()
+      return
+    }
+
+    const recognition = new SpeechRecognitionAPI()
+    recognition.lang = 'en-GB'
+    recognition.continuous = false
+    recognition.interimResults = true
+
+    recognition.onresult = (event) => {
+      let transcript = ''
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript
+      }
+      setInput(transcript)
+    }
+
+    recognition.onerror = () => {
+      setListening(false)
+    }
+
+    recognition.onend = () => {
+      setListening(false)
+    }
+
+    recognitionRef.current = recognition
+    recognition.start()
+    setListening(true)
   }
 
   function handleKeyDown(e) {
@@ -395,12 +440,12 @@ export default function App() {
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={!persona || loading}
-            placeholder={persona ? 'Type your question…' : 'Choose who you are above first'}
+            placeholder={persona ? (listening ? 'Listening…' : 'Type your question…') : 'Choose who you are above first'}
             rows={1}
             style={{
               flex: 1,
               resize: 'none',
-              border: `1px solid ${BRAND.accent}`,
+              border: `1px solid ${listening ? BRAND.coral : BRAND.accent}`,
               borderRadius: '10px',
               padding: '10px 12px',
               fontSize: '14px',
@@ -408,6 +453,34 @@ export default function App() {
               color: BRAND.text
             }}
           />
+          {speechSupported && (
+            <button
+              onClick={toggleListening}
+              disabled={!persona || loading}
+              title={listening ? 'Stop voice input' : 'Speak your question'}
+              aria-label={listening ? 'Stop voice input' : 'Speak your question'}
+              style={{
+                background: listening ? BRAND.coral : BRAND.accent,
+                color: listening ? '#fff' : BRAND.primary,
+                border: 'none',
+                borderRadius: '10px',
+                width: '42px',
+                flexShrink: 0,
+                cursor: 'pointer',
+                opacity: (!persona || loading) ? 0.5 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="23" />
+                <line x1="8" y1="23" x2="16" y2="23" />
+              </svg>
+            </button>
+          )}
           <button
             onClick={() => sendMessage()}
             disabled={!persona || loading || !input.trim()}

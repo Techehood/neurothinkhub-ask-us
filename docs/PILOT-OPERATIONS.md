@@ -2,7 +2,7 @@
 
 ## Open the pilot
 
-1. Confirm the approved resource hosts and feedback destination.
+1. Confirm the approved resource hosts and that Upstash Redis is connected only to this project.
 2. Add `ANTHROPIC_API_KEY` as a server-side Vercel secret.
 3. Set `PILOT_MODE_ENABLED=true` only in the environment being opened.
 4. Redeploy that environment and test one valid question, one excessive question, one feedback rating and one concern report.
@@ -24,9 +24,9 @@ For an urgent hard stop, disable the deployment in Vercel after setting the swit
 
 - Check failed chat and feedback request counts; do not inspect or copy user content into incident notes.
 - Review concern reports in the approved feedback system.
-- Delete feedback events at their `deleteAfter` deadline.
+- Confirm Upstash feedback keys are expiring within 30 days.
 - Confirm the link allow-list still contains only approved hosts.
-- Pause the pilot if safeguarding ownership, the feedback destination or provider access becomes unavailable.
+- Pause the pilot if safeguarding ownership, Upstash Redis or provider access becomes unavailable.
 
 ## Request controls
 

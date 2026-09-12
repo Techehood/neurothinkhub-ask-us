@@ -7,6 +7,7 @@ const RATINGS = new Set([
 const MAX_DETAIL_CHARACTERS = 500;
 const MAX_CONVERSATION_MESSAGES = 10;
 const MAX_MESSAGE_CHARACTERS = 1500;
+const MAX_RETENTION_DAYS = 30;
 
 function setApiHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -74,8 +75,8 @@ export default async function handler(req, res) {
   );
   const retentionDays =
     Number.isFinite(configuredRetention) && configuredRetention > 0
-      ? configuredRetention
-      : 30;
+      ? Math.min(configuredRetention, MAX_RETENTION_DAYS)
+      : MAX_RETENTION_DAYS;
   const deleteAfter = new Date(recordedAt);
   deleteAfter.setUTCDate(deleteAfter.getUTCDate() + retentionDays);
 
@@ -98,15 +99,16 @@ export default async function handler(req, res) {
     event.conversation = cleanedConversation;
   }
 
-  if (!process.env.FEEDBACK_WEBHOOK_URL) {
+  const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!redisUrl || !redisToken) {
     return res
       .status(503)
       .json({ error: "Feedback recording is not available right now." });
   }
 
-  let destination;
   try {
-    destination = new URL(process.env.FEEDBACK_WEBHOOK_URL);
+    const destination = new URL(redisUrl);
     if (destination.protocol !== "https:") throw new Error("HTTPS is required");
   } catch {
     console.error("Feedback recording is misconfigured");
@@ -115,18 +117,27 @@ export default async function handler(req, res) {
       .json({ error: "Feedback recording is not available right now." });
   }
 
-  const headers = { "Content-Type": "application/json" };
-  if (process.env.FEEDBACK_WEBHOOK_TOKEN) {
-    headers.Authorization = `Bearer ${process.env.FEEDBACK_WEBHOOK_TOKEN}`;
-  }
-
   try {
-    const response = await fetch(destination, {
+    const storageKey = `feedback:${answerId}:${recordedAt.getTime()}:${crypto.randomUUID()}`;
+    const expiresInSeconds = retentionDays * 24 * 60 * 60;
+    const response = await fetch(redisUrl.replace(/\/$/, ""), {
       method: "POST",
-      headers,
-      body: JSON.stringify(event),
+      headers: {
+        Authorization: `Bearer ${redisToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify([
+        "SET",
+        storageKey,
+        JSON.stringify(event),
+        "EX",
+        expiresInSeconds,
+      ]),
     });
-    if (!response.ok) throw new Error("feedback destination rejected event");
+    const result = response.ok ? await response.json() : null;
+    if (!response.ok || result?.error) {
+      throw new Error("feedback store rejected event");
+    }
     return res.status(202).json({ recorded: true });
   } catch {
     console.error("Feedback event could not be delivered");

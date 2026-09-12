@@ -25,19 +25,19 @@ Default feedback contains only:
 
 A concern may also contain up to 500 characters supplied by the visitor. The complete on-screen conversation is attached only when the visitor explicitly ticks the consent box. IP address and session identifier are not included in the feedback event.
 
-Feedback is sent server-to-server to `FEEDBACK_WEBHOOK_URL`. The application does not write feedback contents to runtime logs. Before opening the pilot, the operator must ensure the destination:
+Feedback is written server-to-server to Upstash Redis using `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`. The application does not write feedback contents to runtime logs. Before opening the pilot, the operator must ensure the integration:
 
-1. restricts access to authorised reviewers;
-2. can locate a record by answer identifier;
-3. automatically deletes each record at `deleteAfter`;
-4. can delete a record early when a visitor supplies its answer identifier;
+1. is connected only to this Vercel project;
+2. restricts access to authorised reviewers;
+3. automatically expires each record after no more than 30 days;
+4. can locate and delete a record by answer identifier; and
 5. has an approved privacy notice and data-processing agreement.
 
 If the destination cannot enforce these controls, leave feedback unavailable and do not open the pilot to the public.
 
 ## Deletion request
 
-Ask the visitor for the answer identifier only—never ask them to resend the conversation. Search the feedback destination for that identifier, delete the record and any permitted attachments, then record only that the deletion request was completed. Provider-side deletion follows the applicable Anthropic account agreement.
+Ask the visitor for the answer identifier only—never ask them to resend the conversation. In Upstash, scan for `feedback:<answerId>:*`, delete each matching key and any explicitly consented attachment, then record only that the deletion request was completed. Provider-side deletion follows the applicable Anthropic account agreement.
 
 ## Existing data
 

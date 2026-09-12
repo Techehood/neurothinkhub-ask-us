@@ -4,7 +4,7 @@
 
 1. Work from `codex/ask-neurothinkhub-pilot`, never `main`.
 2. Run `npm ci`, `npm run format:check`, `npm run typecheck`, `npm run test:run` and `npm run build`.
-3. Configure the Preview environment using every required name listed in `.env.example`.
+3. Install and connect the Vercel Marketplace Upstash Redis integration, then configure the Preview environment using every required name listed in `.env.example`.
 4. Create a preview through the branch’s Git integration or run `vercel deploy` without `--prod`.
 5. Verify the deployment status is Ready and confirm the URL is a preview alias, not the production domain.
 6. Test keyboard-only question entry, all optional choices, loading text, answer focus, each feedback option, mobile layout, excessive input, rate limiting, provider failure and pilot pause.

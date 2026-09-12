@@ -25,7 +25,7 @@ Default feedback contains only:
 
 A concern may also contain up to 500 characters supplied by the visitor. The complete on-screen conversation is attached only when the visitor explicitly ticks the consent box. IP address and session identifier are not included in the feedback event.
 
-Feedback is written server-to-server to Upstash Redis using `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`. The application does not write feedback contents to runtime logs. Before opening the pilot, the operator must ensure the integration:
+Feedback is written server-to-server to Upstash Redis using `UPSTASH_REDIS_REST_KV_REST_API_URL` and `UPSTASH_REDIS_REST_KV_REST_API_TOKEN`. The application does not write feedback contents to runtime logs. Before opening the pilot, the operator must ensure the integration:
 
 1. is connected only to this Vercel project;
 2. restricts access to authorised reviewers;

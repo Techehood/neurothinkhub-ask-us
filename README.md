@@ -27,21 +27,21 @@ npm run build
 
 Copy `.env.example` to a local `.env` only when developing locally. Never commit `.env` files.
 
-| Name                       | Required         | Purpose                                                                               |
-| -------------------------- | ---------------- | ------------------------------------------------------------------------------------- |
-| `ANTHROPIC_API_KEY`        | Yes              | Server-only Anthropic credential.                                                     |
-| `PILOT_MODE_ENABLED`       | Yes              | Explicitly opens or pauses the pilot API. Missing configuration keeps the API paused. |
-| `MAX_QUESTION_CHARACTERS`  | No               | Server question-size ceiling.                                                         |
-| `MAX_RESPONSE_CHARACTERS`  | No               | Server answer-size ceiling after provider response.                                   |
-| `MAX_RESPONSE_TOKENS`      | No               | Maximum tokens requested from the existing model.                                     |
-| `MAX_SESSION_REQUESTS`     | No               | Requests allowed for one pilot session in the rate window.                            |
-| `RATE_LIMIT_REQUESTS`      | No               | Requests allowed from one connection in the rate window.                              |
-| `RATE_LIMIT_WINDOW_MS`     | No               | Length of the request-limit window.                                                   |
-| `PROVIDER_TIMEOUT_MS`      | No               | Provider request timeout.                                                             |
-| `APPROVED_RESOURCE_HOSTS`  | No               | Comma-separated host allow-list for response links.                                   |
-| `UPSTASH_REDIS_REST_URL`   | Yes for feedback | Server-only URL provisioned by the Vercel Upstash integration.                        |
-| `UPSTASH_REDIS_REST_TOKEN` | Yes for feedback | Server-only token provisioned by the Vercel Upstash integration.                      |
-| `FEEDBACK_RETENTION_DAYS`  | No               | Feedback lifetime in days; defaults to and is capped at 30 days.                      |
+| Name                                   | Required         | Purpose                                                                               |
+| -------------------------------------- | ---------------- | ------------------------------------------------------------------------------------- |
+| `ANTHROPIC_API_KEY`                    | Yes              | Server-only Anthropic credential.                                                     |
+| `PILOT_MODE_ENABLED`                   | Yes              | Explicitly opens or pauses the pilot API. Missing configuration keeps the API paused. |
+| `MAX_QUESTION_CHARACTERS`              | No               | Server question-size ceiling.                                                         |
+| `MAX_RESPONSE_CHARACTERS`              | No               | Server answer-size ceiling after provider response.                                   |
+| `MAX_RESPONSE_TOKENS`                  | No               | Maximum tokens requested from the existing model.                                     |
+| `MAX_SESSION_REQUESTS`                 | No               | Requests allowed for one pilot session in the rate window.                            |
+| `RATE_LIMIT_REQUESTS`                  | No               | Requests allowed from one connection in the rate window.                              |
+| `RATE_LIMIT_WINDOW_MS`                 | No               | Length of the request-limit window.                                                   |
+| `PROVIDER_TIMEOUT_MS`                  | No               | Provider request timeout.                                                             |
+| `APPROVED_RESOURCE_HOSTS`              | No               | Comma-separated host allow-list for response links.                                   |
+| `UPSTASH_REDIS_REST_KV_REST_API_URL`   | Yes for feedback | Server-only URL provisioned by the Vercel Upstash integration.                        |
+| `UPSTASH_REDIS_REST_KV_REST_API_TOKEN` | Yes for feedback | Server-only token provisioned by the Vercel Upstash integration.                      |
+| `FEEDBACK_RETENTION_DAYS`              | No               | Feedback lifetime in days; defaults to and is capped at 30 days.                      |
 
 ## Operator documentation
 

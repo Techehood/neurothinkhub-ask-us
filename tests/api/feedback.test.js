@@ -32,8 +32,9 @@ async function call(body) {
 
 beforeEach(() => {
   vi.resetModules();
-  process.env.UPSTASH_REDIS_REST_URL = "https://redis.example.upstash.io";
-  process.env.UPSTASH_REDIS_REST_TOKEN = "redis-test-token";
+  process.env.UPSTASH_REDIS_REST_KV_REST_API_URL =
+    "https://redis.example.upstash.io";
+  process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN = "redis-test-token";
   process.env.FEEDBACK_RETENTION_DAYS = "30";
   vi.stubGlobal(
     "fetch",
@@ -47,8 +48,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  delete process.env.UPSTASH_REDIS_REST_URL;
-  delete process.env.UPSTASH_REDIS_REST_TOKEN;
+  delete process.env.UPSTASH_REDIS_REST_KV_REST_API_URL;
+  delete process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN;
   delete process.env.FEEDBACK_RETENTION_DAYS;
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -146,12 +147,13 @@ describe("POST /api/feedback", () => {
   });
 
   test("returns a safe error when feedback recording is not configured or unavailable", async () => {
-    delete process.env.UPSTASH_REDIS_REST_URL;
+    delete process.env.UPSTASH_REDIS_REST_KV_REST_API_URL;
     expect(
       (await call({ answerId: "ans_12345678", rating: "helpful" })).statusCode,
     ).toBe(503);
 
-    process.env.UPSTASH_REDIS_REST_URL = "https://redis.example.upstash.io";
+    process.env.UPSTASH_REDIS_REST_KV_REST_API_URL =
+      "https://redis.example.upstash.io";
     fetch.mockResolvedValueOnce({ ok: false, status: 500 });
     const unavailable = await call({
       answerId: "ans_12345678",

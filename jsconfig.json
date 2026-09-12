@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "target": "ES2022"
+  },
+  "include": [
+    "api/**/*.js",
+    "src/**/*.js",
+    "src/**/*.jsx",
+    "tests/**/*.js",
+    "tests/**/*.jsx"
+  ]
+}

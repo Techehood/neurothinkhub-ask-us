@@ -1,515 +1,512 @@
-// ============================================================
-// IMPORTS
-// ============================================================
-import { useState, useRef, useEffect } from 'react'
+import { useEffect, useRef, useState } from "react";
+import "./styles.css";
 
-// ============================================================
-// BRAND COLOURS — NeuroThinkHub design tokens
-// ============================================================
-const BRAND = {
-  primary: '#594a66',
-  primaryDark: '#1C2436',
-  secondary: '#8e7e95',
-  accent: '#F8E6D8',
-  bg: '#FBF6F2',
-  sage: '#7a9e87',
-  coral: '#c47b6a',
-  text: '#1C2436',
-  textMuted: '#6e6480'
+const MAX_QUESTION_CHARACTERS = 1500;
+
+const CONTEXT_FIELDS = [
+  {
+    key: "supportFor",
+    label: "Who are you seeking support for?",
+    options: [
+      ["myself", "Myself"],
+      ["learner", "A learner"],
+      ["employee", "An employee"],
+      ["family-member", "A family member"],
+      ["team", "A team"],
+    ],
+  },
+  {
+    key: "setting",
+    label: "Where is support needed?",
+    options: [
+      ["education", "Education"],
+      ["workplace", "Workplace"],
+      ["home", "Home"],
+      ["wellbeing", "Wellbeing"],
+      ["entrepreneurship", "Entrepreneurship"],
+    ],
+  },
+  {
+    key: "answerStyle",
+    label: "How would you like the answer?",
+    options: [
+      ["quick-steps", "Quick steps"],
+      ["checklist", "Checklist"],
+      ["examples", "Examples"],
+      ["detailed-explanation", "Detailed explanation"],
+    ],
+  },
+];
+
+const STARTER_PROMPTS = [
+  "What could make it easier to start a difficult task?",
+  "How can instructions be made clearer and easier to follow?",
+  "What practical support could help in a busy environment?",
+];
+
+const SIDE_ITEMS = {
+  left: [
+    "ADHD",
+    "Dyslexia",
+    "Autism",
+    "Dyspraxia",
+    "Dyscalculia",
+    "Sensory processing",
+  ],
+  right: [
+    "Self-discovery",
+    "Workplace tools",
+    "The Bridge",
+    "Coaching",
+    "Community",
+    "Workshops",
+  ],
+};
+
+function createSessionId() {
+  if (globalThis.crypto?.randomUUID)
+    return `session_${globalThis.crypto.randomUUID()}`;
+  return `session_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 }
 
-// ============================================================
-// PERSONAS — 6 user types
-// label = full text shown in chat header
-// chipLabel = short text shown in chip selector
-// ============================================================
-const PERSONAS = [
-  { id: 'neurodivergent', label: 'I am neurodivergent', chipLabel: 'Neurodivergent', sublabel: 'ADHD, dyslexia, autism, or similar', color: BRAND.primary, light: '#EDE8F2' },
-  { id: 'manager', label: 'I manage a team', chipLabel: 'Manager', sublabel: 'Supporting neurodivergent colleagues', color: BRAND.primaryDark, light: '#E8EBF0' },
-  { id: 'hr', label: 'I work in HR / L&D', chipLabel: 'HR / L&D', sublabel: 'Building neuroinclusion programmes', color: BRAND.secondary, light: '#F0EDF2' },
-  { id: 'parent', label: 'I am a parent or family member', chipLabel: 'Parent / Family', sublabel: 'Supporting someone I love', color: BRAND.coral, light: '#F7EEEC' },
-  { id: 'educator', label: 'I am an educator', chipLabel: 'Educator', sublabel: 'Working with neurodivergent students', color: BRAND.sage, light: '#EDF3EF' },
-  { id: 'entrepreneur', label: 'Neurodivergent entrepreneur', chipLabel: 'Entrepreneur', sublabel: 'Running a business with a different kind of mind', color: '#7B6EA0', light: '#F0EDF8' }
-]
-
-// ============================================================
-// STARTER PROMPTS — 3 suggested questions per persona
-// shown before the user types anything
-// ============================================================
-const STARTER_PROMPTS = {
-  neurodivergent: [
-    'Why do I struggle so much with starting tasks?',
-    'How do I explain my needs to my manager?',
-    'What is executive dysfunction and how do I manage it?'
-  ],
-  manager: [
-    'How do I have a sensitive conversation about performance?',
-    'What adjustments actually make a difference?',
-    'How do I support someone who may be undiagnosed?'
-  ],
-  hr: [
-    'How do we build a disclosure-safe culture?',
-    'What should a neurodiversity policy include?',
-    'How do we measure the impact of our neuroinclusion work?'
-  ],
-  parent: [
-    'My child has just been diagnosed — where do I start?',
-    'How do I support them without taking over?',
-    'What can I ask their school or employer to do?'
-  ],
-  educator: [
-    'What classroom adjustments make the biggest difference?',
-    'How do I support a student who masks well?',
-    'How do I talk to parents about possible neurodivergence?'
-  ],
-  entrepreneur: [
-    'How do I manage the chaos of running a business with ADHD?',
-    'How do I structure my day when routine feels impossible?',
-    'What does a neuroinclusive business actually look like?'
-  ]
-}
-
-// ============================================================
-// SIDE PANEL DATA
-// Left panel = ND types | Right panel = Solutions
-// ============================================================
-const ND_TYPES = [
-  { label: 'ADHD', color: BRAND.primary, light: '#EDE8F2' },
-  { label: 'Dyslexia', color: BRAND.coral, light: '#F7EEEC' },
-  { label: 'Autism', color: BRAND.sage, light: '#EDF3EF' },
-  { label: 'Dyspraxia', color: BRAND.secondary, light: '#F0EDF2' },
-  { label: 'Dyscalculia', color: '#7B6EA0', light: '#F0EDF8' },
-  { label: 'Sensory Processing', color: BRAND.primaryDark, light: '#E8EBF0' },
-  { label: "Tourette's", color: BRAND.textMuted, light: '#F5F3F8' }
-]
-
-const SOLUTIONS = [
-  { label: 'Self-discovery', color: BRAND.primary, light: '#EDE8F2' },
-  { label: 'Workplace tools', color: BRAND.sage, light: '#EDF3EF' },
-  { label: 'The Bridge', color: BRAND.coral, light: '#F7EEEC' },
-  { label: '1:1 Coaching', color: BRAND.secondary, light: '#F0EDF2' },
-  { label: 'Community', color: '#7B6EA0', light: '#F0EDF8' },
-  { label: 'Workshops', color: BRAND.primaryDark, light: '#E8EBF0' },
-  { label: 'Assessments', color: BRAND.textMuted, light: '#F5F3F8' }
-]
-
-// ============================================================
-// TREE SVG — Decorative calming tree illustration
-// Used at the top of each side panel
-// ============================================================
-function TreeSVG({ trunkColor, canopyColor, canopyLight }) {
+function ContextChoices({ context, onChange }) {
   return (
-    <svg viewBox="0 0 100 118" style={{ width: '64px', display: 'block', margin: '0 auto 10px' }}>
-      <ellipse cx="50" cy="114" rx="15" ry="4" fill={canopyColor} opacity="0.45" />
-      <path d="M 50 110 C 50 92 49 72 48 50"
-        stroke={trunkColor} strokeWidth="5" fill="none" strokeLinecap="round" opacity="0.55" />
-      <path d="M 49 105 C 42 103 36 106 32 109"
-        stroke={trunkColor} strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.3" />
-      <path d="M 50 105 C 57 103 63 106 67 109"
-        stroke={trunkColor} strokeWidth="2" fill="none" strokeLinecap="round" opacity="0.3" />
-      <circle cx="48" cy="44" r="22" fill={canopyColor} opacity="0.6" />
-      <circle cx="30" cy="54" r="14" fill={canopyLight} opacity="0.55" />
-      <circle cx="67" cy="51" r="15" fill={canopyLight} opacity="0.5" />
-      <circle cx="48" cy="24" r="14" fill={canopyColor} opacity="0.45" />
-      <circle cx="31" cy="36" r="9"  fill={canopyLight} opacity="0.38" />
-      <circle cx="65" cy="33" r="10" fill={canopyLight} opacity="0.38" />
-      <circle cx="48" cy="10" r="7" fill={canopyColor} opacity="0.28" />
-    </svg>
-  )
-}
-
-// ============================================================
-// NEURO PANEL — Side panel component
-// Tree illustration + title + coloured chip list
-// Hidden on mobile to save screen space
-// ============================================================
-function NeuroPanel({ title, items, trunkColor, canopyColor, canopyLight }) {
-  return (
-    <div style={{ padding: '28px 10px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '180px' }}>
-      <TreeSVG trunkColor={trunkColor} canopyColor={canopyColor} canopyLight={canopyLight} />
-      <h3 style={{ fontSize: '13px', fontWeight: 600, color: BRAND.text, margin: '0 0 14px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{title}</h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-        {items.map((item, i) => (
-          <div key={i} style={{ background: item.light, color: item.color, fontSize: '12.5px', fontWeight: 500, padding: '7px 10px', borderRadius: '8px', textAlign: 'center' }}>
-            {item.label}
-          </div>
+    <section className="context-panel" aria-labelledby="context-heading">
+      <div className="section-heading-row">
+        <div>
+          <h2 id="context-heading">Optional choices</h2>
+          <p>Choose any that help, or skip them and ask your question now.</p>
+        </div>
+        {Object.keys(context).length > 0 && (
+          <button
+            className="text-button"
+            type="button"
+            onClick={() => onChange({})}
+          >
+            Clear choices
+          </button>
+        )}
+      </div>
+      <div className="context-grid">
+        {CONTEXT_FIELDS.map((field, index) => (
+          <label key={field.key} className="select-field">
+            <span>
+              {index + 1}. {field.label}
+            </span>
+            <select
+              value={context[field.key] || ""}
+              onChange={(event) =>
+                onChange({
+                  ...context,
+                  [field.key]: event.target.value || undefined,
+                })
+              }
+            >
+              <option value="">Skip this choice</option>
+              {field.options.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
         ))}
       </div>
-    </div>
-  )
+    </section>
+  );
 }
 
-// ============================================================
-// PERSONA BAR — single-line "I am..." selector
-// Collapses to a small pill once a persona is chosen, so the
-// chat takes over the screen instead of 6 big buttons.
-// ============================================================
-function PersonaBar({ persona, onChoose, onChangeClick }) {
-  const chosen = PERSONAS.find(p => p.id === persona)
+function SidePanel({ title, items }) {
+  return (
+    <aside className="side-panel" aria-label={title}>
+      <div className="tree-mark" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+      <h2>{title}</h2>
+      <ul>
+        {items.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </aside>
+  );
+}
 
-  if (chosen) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 14px', borderBottom: `1px solid ${BRAND.accent}` }}>
-        <span style={{ fontSize: '12px', color: BRAND.textMuted }}>I am:</span>
-        <span style={{ fontSize: '12.5px', fontWeight: 600, color: chosen.color, background: chosen.light, padding: '4px 10px', borderRadius: '999px' }}>
-          {chosen.chipLabel}
-        </span>
-        <button
-          onClick={onChangeClick}
-          style={{ marginLeft: 'auto', fontSize: '12px', color: BRAND.textMuted, background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline', padding: '4px' }}
-        >
-          change
+function FeedbackControls({ message, conversation }) {
+  const [status, setStatus] = useState("");
+  const [reportOpen, setReportOpen] = useState(false);
+  const [detail, setDetail] = useState("");
+  const [includeConversation, setIncludeConversation] = useState(false);
+
+  async function submitFeedback(rating, extra = {}) {
+    setStatus("Sending feedback…");
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answerId: message.answerId, rating, ...extra }),
+      });
+      if (!response.ok) throw new Error("feedback request failed");
+      setStatus("Thank you for your feedback.");
+      setReportOpen(false);
+    } catch {
+      setStatus("Feedback could not be sent. Please try again.");
+    }
+  }
+
+  function submitConcern(event) {
+    event.preventDefault();
+    submitFeedback("concern", {
+      detail: detail.trim() || undefined,
+      includeConversation,
+      ...(includeConversation ? { conversation } : {}),
+    });
+  }
+
+  return (
+    <div className="feedback">
+      <div
+        className="feedback-actions"
+        role="group"
+        aria-label="Was this answer helpful?"
+      >
+        <span>Was this helpful?</span>
+        <button type="button" onClick={() => submitFeedback("helpful")}>
+          Helpful
+        </button>
+        <button type="button" onClick={() => submitFeedback("partly-helpful")}>
+          Partly helpful
+        </button>
+        <button type="button" onClick={() => submitFeedback("not-helpful")}>
+          Not helpful
+        </button>
+        <button type="button" onClick={() => setReportOpen((open) => !open)}>
+          Report a concern
         </button>
       </div>
-    )
-  }
 
-  return (
-    <div style={{ padding: '14px' }}>
-      <p style={{ fontSize: '13px', color: BRAND.textMuted, margin: '0 0 10px' }}>I am...</p>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-        {PERSONAS.map(p => (
-          <button
-            key={p.id}
-            onClick={() => onChoose(p.id)}
-            style={{
-              fontSize: '13px',
-              fontWeight: 500,
-              color: p.color,
-              background: p.light,
-              border: 'none',
-              borderRadius: '999px',
-              padding: '8px 14px',
-              cursor: 'pointer'
-            }}
-            title={p.sublabel}
-          >
-            {p.chipLabel}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ============================================================
-// MAIN APP — chat widget
-// ============================================================
-export default function App() {
-  const [persona, setPersona] = useState(null)
-  const [messages, setMessages] = useState([])
-  const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 860 : false)
-  const [listening, setListening] = useState(false)
-
-  const inputRef = useRef(null)
-  const lastMessageRef = useRef(null)
-  const recognitionRef = useRef(null)
-
-  // Browser support check for voice input (Web Speech API)
-  const SpeechRecognitionAPI = typeof window !== 'undefined'
-    ? (window.SpeechRecognition || window.webkitSpeechRecognition)
-    : null
-  const speechSupported = !!SpeechRecognitionAPI
-
-  // Track viewport width so side panels hide on small screens
-  useEffect(() => {
-    function handleResize() {
-      setIsMobile(window.innerWidth < 860)
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
-  // Focus the chat input as soon as a persona is confirmed
-  useEffect(() => {
-    if (persona && inputRef.current) {
-      inputRef.current.focus()
-    }
-  }, [persona])
-
-  // Scroll fix: when a new message arrives, scroll to the TOP of that
-  // message (not the bottom of the page) so mobile users read from the
-  // start of the answer instead of having to scroll back up.
-  useEffect(() => {
-    if (lastMessageRef.current) {
-      lastMessageRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }, [messages])
-
-  async function sendMessage(text) {
-    const content = (text !== undefined ? text : input).trim()
-    if (!content || loading || !persona) return
-
-    const newMessages = [...messages, { role: 'user', content }]
-    setMessages(newMessages)
-    setInput('')
-    setLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages, persona })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        setError(data.error || 'Something went wrong. Please try again.')
-        setLoading(false)
-        return
-      }
-
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
-    } catch (err) {
-      setError('Could not reach NeuroThinkHub right now. Please check your connection and try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  // Start or stop voice input. Uses the browser's built-in speech
-  // recognition — no extra API calls or cost. Transcribed text lands
-  // in the same input box as typing, so sendMessage works unchanged.
-  function toggleListening() {
-    if (!speechSupported || !persona || loading) return
-
-    if (listening) {
-      recognitionRef.current?.stop()
-      return
-    }
-
-    const recognition = new SpeechRecognitionAPI()
-    recognition.lang = 'en-GB'
-    recognition.continuous = false
-    recognition.interimResults = true
-
-    recognition.onresult = (event) => {
-      let transcript = ''
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript
-      }
-      setInput(transcript)
-    }
-
-    recognition.onerror = () => {
-      setListening(false)
-    }
-
-    recognition.onend = () => {
-      setListening(false)
-    }
-
-    recognitionRef.current = recognition
-    recognition.start()
-    setListening(true)
-  }
-
-  function handleKeyDown(e) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage()
-    }
-  }
-
-  function handleChoosePersona(id) {
-    setPersona(id)
-  }
-
-  function handleChangePersona() {
-    setPersona(null)
-  }
-
-  const starterPrompts = persona ? STARTER_PROMPTS[persona] : []
-
-  return (
-    <div style={{
-      display: 'flex',
-      width: '100%',
-      minHeight: '100vh',
-      background: BRAND.bg,
-      fontFamily: 'Lexend, sans-serif',
-      color: BRAND.text
-    }}>
-      {!isMobile && (
-        <NeuroPanel
-          title="ND Types"
-          items={ND_TYPES}
-          trunkColor={BRAND.primaryDark}
-          canopyColor={BRAND.primary}
-          canopyLight={BRAND.secondary}
-        />
+      {reportOpen && (
+        <form className="concern-form" onSubmit={submitConcern}>
+          <label>
+            What concerned you? <span>(optional, 500 characters maximum)</span>
+            <textarea
+              value={detail}
+              onChange={(event) => setDetail(event.target.value)}
+              maxLength={500}
+              rows={3}
+            />
+          </label>
+          <label className="checkbox-field">
+            <input
+              type="checkbox"
+              checked={includeConversation}
+              onChange={(event) => setIncludeConversation(event.target.checked)}
+            />
+            Include this conversation with my report. This is optional and off
+            by default.
+          </label>
+          <button type="submit">Send concern report</button>
+        </form>
       )}
 
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        maxWidth: '720px',
-        margin: '0 auto',
-        background: '#fff',
-        minHeight: '100vh'
-      }}>
-        <div style={{ padding: '16px 14px 6px' }}>
-          <h1 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: BRAND.primary }}>Ask NeuroThinkHub</h1>
-          <p style={{ fontSize: '12px', color: BRAND.textMuted, margin: '4px 0 0' }}>
-            Grounded guidance, not a diagnosis. If you're in distress, please reach out to a professional or someone you trust.
-          </p>
-        </div>
+      {status && (
+        <p className="feedback-status" aria-live="polite">
+          {status}
+        </p>
+      )}
+    </div>
+  );
+}
 
-        <PersonaBar persona={persona} onChoose={handleChoosePersona} onChangeClick={handleChangePersona} />
+export default function App() {
+  const [context, setContext] = useState({});
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [announcement, setAnnouncement] = useState("");
+  const [listening, setListening] = useState(false);
+  const inputRef = useRef(null);
+  const newestAnswerRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const sessionIdRef = useRef(createSessionId());
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '14px' }}>
-          {!persona && (
-            <p style={{ fontSize: '13px', color: BRAND.textMuted }}>
-              Choose who you are above to get started.
-            </p>
-          )}
+  const SpeechRecognitionAPI =
+    typeof window !== "undefined"
+      ? window.SpeechRecognition || window.webkitSpeechRecognition
+      : null;
 
-          {persona && messages.length === 0 && (
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.role !== "assistant" || !newestAnswerRef.current) return;
+
+    const reduceMotion = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    newestAnswerRef.current.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "start",
+    });
+    newestAnswerRef.current.focus({ preventScroll: true });
+    setAnnouncement("Answer ready.");
+  }, [messages]);
+
+  async function sendMessage(text) {
+    const question = (text ?? input).trim();
+    if (!question || loading) return;
+
+    const history = messages.map(({ role, content }) => ({ role, content }));
+    setMessages((current) => [...current, { role: "user", content: question }]);
+    setInput("");
+    setLoading(true);
+    setError("");
+    setAnnouncement("");
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question,
+          history,
+          context: Object.fromEntries(
+            Object.entries(context).filter(([, value]) => value),
+          ),
+          sessionId: sessionIdRef.current,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok)
+        throw new Error(
+          data.error || "Something went wrong. Please try again.",
+        );
+
+      setMessages((current) => [
+        ...current,
+        { role: "assistant", content: data.reply, answerId: data.answerId },
+      ]);
+    } catch (requestError) {
+      setError(
+        requestError.message ||
+          "Could not reach Ask NeuroThinkHub. Please check your connection and try again.",
+      );
+      setAnnouncement("The answer could not be prepared.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleKeyDown(event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function toggleListening() {
+    if (!SpeechRecognitionAPI || loading) return;
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const recognition = new SpeechRecognitionAPI();
+    recognition.lang = "en-GB";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.onresult = (event) => {
+      let transcript = "";
+      for (let index = 0; index < event.results.length; index += 1) {
+        transcript += event.results[index][0].transcript;
+      }
+      setInput(transcript.slice(0, MAX_QUESTION_CHARACTERS));
+    };
+    recognition.onerror = () => setListening(false);
+    recognition.onend = () => setListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setListening(true);
+  }
+
+  function startAgain() {
+    if (
+      !window.confirm(
+        "Start again and remove this conversation from the screen?",
+      )
+    )
+      return;
+    setMessages([]);
+    setInput("");
+    setError("");
+    setAnnouncement("Conversation removed from the screen.");
+    sessionIdRef.current = createSessionId();
+    inputRef.current?.focus();
+  }
+
+  const conversationForFeedback = messages.map(({ role, content }) => ({
+    role,
+    content,
+  }));
+
+  return (
+    <div className="app-shell">
+      <SidePanel title="Neurodiversity topics" items={SIDE_ITEMS.left} />
+
+      <main className="chat-card">
+        <header className="app-header">
+          <div className="title-row">
             <div>
-              <p style={{ fontSize: '13px', color: BRAND.textMuted, marginBottom: '10px' }}>Try asking:</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {starterPrompts.map((prompt, i) => (
-                  <button
-                    key={i}
-                    onClick={() => sendMessage(prompt)}
-                    style={{
-                      textAlign: 'left',
-                      fontSize: '13.5px',
-                      color: BRAND.text,
-                      background: BRAND.accent,
-                      border: 'none',
-                      borderRadius: '10px',
-                      padding: '10px 12px',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
+              <p className="eyebrow">Pilot</p>
+              <h1>Ask NeuroThinkHub</h1>
+            </div>
+            {messages.length > 0 && (
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={startAgain}
+              >
+                Start Again
+              </button>
+            )}
+          </div>
+          <div
+            className="pilot-notice"
+            role="note"
+            aria-label="Pilot information"
+          >
+            <strong>
+              Ask NeuroThinkHub is a pilot providing general guidance.
+            </strong>
+            <span>
+              {" "}
+              It does not diagnose or replace medical, legal, safeguarding or
+              emergency support.
+            </span>
+          </div>
+          <p className="privacy-notice">
+            Protect your privacy: do not submit names, addresses, medical
+            records or confidential workplace information.
+          </p>
+        </header>
+
+        <ContextChoices context={context} onChange={setContext} />
+
+        <section className="conversation" aria-label="Conversation">
+          {messages.length === 0 && (
+            <div className="starters">
+              <p>Ask your own question now, or try one of these:</p>
+              {STARTER_PROMPTS.map((prompt) => (
+                <button
+                  type="button"
+                  key={prompt}
+                  onClick={() => sendMessage(prompt)}
+                >
+                  {prompt}
+                </button>
+              ))}
             </div>
           )}
 
-          {messages.map((msg, i) => {
-            const isLast = i === messages.length - 1
-            return (
-              <div
-                key={i}
-                ref={isLast ? lastMessageRef : null}
-                style={{
-                  display: 'flex',
-                  justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                  marginBottom: '12px'
-                }}
-              >
-                <div style={{
-                  maxWidth: '85%',
-                  background: msg.role === 'user' ? BRAND.primary : BRAND.bg,
-                  color: msg.role === 'user' ? '#fff' : BRAND.text,
-                  borderRadius: '14px',
-                  padding: '10px 14px',
-                  fontSize: '14.5px',
-                  lineHeight: 1.5,
-                  whiteSpace: 'pre-wrap'
-                }}>
-                  {msg.content}
+          {messages.map((message, index) => {
+            const isNewestAnswer =
+              message.role === "assistant" &&
+              !messages
+                .slice(index + 1)
+                .some((later) => later.role === "assistant");
+
+            if (message.role === "user") {
+              return (
+                <div
+                  className="message user-message"
+                  key={`${index}-${message.content}`}
+                >
+                  {message.content}
                 </div>
-              </div>
-            )
+              );
+            }
+
+            return (
+              <article
+                className="answer-block"
+                key={message.answerId || `${index}-${message.content}`}
+                aria-label="Answer from Ask NeuroThinkHub"
+                tabIndex={-1}
+                ref={isNewestAnswer ? newestAnswerRef : null}
+              >
+                <div className="message assistant-message">
+                  {message.content}
+                </div>
+                <FeedbackControls
+                  message={message}
+                  conversation={conversationForFeedback}
+                />
+              </article>
+            );
           })}
 
           {loading && (
-            <div style={{ fontSize: '13px', color: BRAND.textMuted, padding: '6px 0' }}>Thinking…</div>
+            <p className="loading-status" role="status">
+              Preparing your answer…
+            </p>
           )}
-
           {error && (
-            <div style={{ fontSize: '13px', color: BRAND.coral, padding: '6px 0' }}>{error}</div>
+            <p className="error-message" role="alert">
+              {error}
+            </p>
           )}
-        </div>
+          <p className="sr-only" aria-live="polite">
+            {announcement}
+          </p>
+        </section>
 
-        <div style={{ display: 'flex', gap: '8px', padding: '12px 14px', borderTop: `1px solid ${BRAND.accent}` }}>
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={!persona || loading}
-            placeholder={persona ? (listening ? 'Listening…' : 'Type your question…') : 'Choose who you are above first'}
-            rows={1}
-            style={{
-              flex: 1,
-              resize: 'none',
-              border: `1px solid ${listening ? BRAND.coral : BRAND.accent}`,
-              borderRadius: '10px',
-              padding: '10px 12px',
-              fontSize: '14px',
-              fontFamily: 'inherit',
-              color: BRAND.text
-            }}
-          />
-          {speechSupported && (
+        <div className="composer">
+          <label htmlFor="question">Your question</label>
+          <div className="composer-row">
+            <textarea
+              id="question"
+              ref={inputRef}
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={loading}
+              maxLength={MAX_QUESTION_CHARACTERS}
+              placeholder={listening ? "Listening…" : "Type your question…"}
+              rows={2}
+            />
+            {SpeechRecognitionAPI && (
+              <button
+                type="button"
+                className={
+                  listening ? "voice-button is-active" : "voice-button"
+                }
+                onClick={toggleListening}
+                disabled={loading}
+                aria-label={
+                  listening ? "Stop voice input" : "Speak your question"
+                }
+              >
+                {listening ? "Stop" : "Speak"}
+              </button>
+            )}
             <button
-              onClick={toggleListening}
-              disabled={!persona || loading}
-              title={listening ? 'Stop voice input' : 'Speak your question'}
-              aria-label={listening ? 'Stop voice input' : 'Speak your question'}
-              style={{
-                background: listening ? BRAND.coral : BRAND.accent,
-                color: listening ? '#fff' : BRAND.primary,
-                border: 'none',
-                borderRadius: '10px',
-                width: '42px',
-                flexShrink: 0,
-                cursor: 'pointer',
-                opacity: (!persona || loading) ? 0.5 : 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
+              type="button"
+              className="send-button"
+              onClick={() => sendMessage()}
+              disabled={loading || !input.trim()}
+              aria-label="Send question"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                <line x1="12" y1="19" x2="12" y2="23" />
-                <line x1="8" y1="23" x2="16" y2="23" />
-              </svg>
+              Send
             </button>
-          )}
-          <button
-            onClick={() => sendMessage()}
-            disabled={!persona || loading || !input.trim()}
-            style={{
-              background: BRAND.primary,
-              color: '#fff',
-              border: 'none',
-              borderRadius: '10px',
-              padding: '0 18px',
-              fontSize: '14px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              opacity: (!persona || loading || !input.trim()) ? 0.5 : 1
-            }}
-          >
-            Send
-          </button>
+          </div>
+          <p className="character-count">
+            {input.length} of {MAX_QUESTION_CHARACTERS} characters
+          </p>
         </div>
-      </div>
+      </main>
 
-      {!isMobile && (
-        <NeuroPanel
-          title="Solutions"
-          items={SOLUTIONS}
-          trunkColor={BRAND.sage}
-          canopyColor={BRAND.coral}
-          canopyLight={BRAND.secondary}
-        />
-      )}
+      <SidePanel title="Support options" items={SIDE_ITEMS.right} />
     </div>
-  )
+  );
 }

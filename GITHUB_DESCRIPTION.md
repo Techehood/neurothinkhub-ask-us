@@ -1,27 +1,33 @@
 # GitHub Repository Details
 
 ## Repository name
+
 neurothinkhub-ask-us
 
 ## Short description (used in GitHub repo header — 1 line)
-AI-powered neurodiversity advisor widget for neurothinkhub.com — persona-aware chat built with React, Vite, and Claude Haiku via a Vercel serverless API.
+
+Pilot neuroinclusion guidance widget for neurothinkhub.com — accessible React chat with server-side safety and privacy controls.
 
 ## README description (paste into README.md)
 
-# Ask Us — NeuroThinkHub
+# Ask NeuroThinkHub
 
-Personalised AI guidance on neurodiversity, built for [NeuroThinkHub](https://neurothinkhub.com).
+General, non-diagnostic guidance about neuroinclusion, built for [NeuroThinkHub](https://neurothinkhub.com).
 
-Visitors choose who they are — neurodivergent individual, manager, HR professional, parent/family member, educator, or neurodivergent entrepreneur — and receive guidance tailored to their lens. Powered by Claude Haiku for fast, empathetic, cost-efficient responses.
+Visitors can ask immediately or use three optional choices to shape practical, strengths-based guidance. The existing Claude Haiku integration remains behind a protected Vercel serverless route.
 
 ## What it does
-- 6 persona-aware conversation modes with distinct system prompts
-- Starter questions per persona to reduce blank-page friction
-- ND-friendly UX: short responses, clear visual chunking, no walls of text
-- Session-based rate limiting (15 requests/IP/hour) and message cap (10/session)
-- "Book a free call" CTA linked to NeuroThinkHub contact page
+
+- Optional support-for, setting and answer-style choices
+- Pilot, privacy, safety and escalation notices
+- Keyboard, screen-reader, reduced-motion and mobile support
+- Voice input using the browser Web Speech API where available
+- Server-only API credentials, request limits, timeouts and safe errors
+- Versioned response guidance and approved-resource link filtering
+- Consent-gated concern reports and minimal feedback records
 
 ## Tech stack
+
 - **Frontend**: React 18 + Vite
 - **API**: Vercel Serverless Function (Node.js)
 - **AI model**: Claude Haiku (`claude-haiku-4-5-20251001`) via Anthropic API
@@ -39,9 +45,8 @@ For full deploy instructions, see [DEPLOY.md](./DEPLOY.md).
 
 ## Environment variables
 
-| Variable | Description |
-|---|---|
-| `ANTHROPIC_API_KEY` | Your Claude API key from console.anthropic.com |
+See `.env.example` and `README.md` for the complete variable-name list. Never commit values.
 
 ## Topics / tags (add these to GitHub repo topics)
+
 neurodiversity, adhd, dyslexia, neuroinclusion, react, vite, vercel, claude-ai, anthropic, chatbot, accessibility

@@ -134,6 +134,79 @@ function SidePanel({ title, items }) {
   );
 }
 
+function renderInlineFormatting(text, keyPrefix) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={`${keyPrefix}-${index}`}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
+function AnswerContent({ content }) {
+  const lines = content.replace(/\r/g, "").split("\n");
+  const blocks = [];
+
+  for (let index = 0; index < lines.length;) {
+    const line = lines[index].trim();
+    if (!line) {
+      index += 1;
+      continue;
+    }
+
+    const heading = line.match(/^#{1,6}\s+(.+)$/);
+    if (heading) {
+      blocks.push(
+        <h3 className="answer-heading" key={`heading-${index}`}>
+          {renderInlineFormatting(heading[1], `heading-${index}`)}
+        </h3>,
+      );
+      index += 1;
+      continue;
+    }
+
+    const ordered = line.match(/^\d+[.)]\s+(.+)$/);
+    const unordered = line.match(/^[-*]\s+(.+)$/);
+    if (ordered || unordered) {
+      const items = [];
+      const matcher = ordered ? /^\d+[.)]\s+(.+)$/ : /^[-*]\s+(.+)$/;
+      while (index < lines.length) {
+        const item = lines[index].trim().match(matcher);
+        if (!item) break;
+        items.push(
+          <li key={`item-${index}`}>
+            {renderInlineFormatting(item[1], `item-${index}`)}
+          </li>,
+        );
+        index += 1;
+      }
+      const List = ordered ? "ol" : "ul";
+      blocks.push(<List key={`list-${index}`}>{items}</List>);
+      continue;
+    }
+
+    const paragraphLines = [line];
+    index += 1;
+    while (
+      index < lines.length &&
+      lines[index].trim() &&
+      !/^#{1,6}\s+/.test(lines[index].trim()) &&
+      !/^\d+[.)]\s+/.test(lines[index].trim()) &&
+      !/^[-*]\s+/.test(lines[index].trim())
+    ) {
+      paragraphLines.push(lines[index].trim());
+      index += 1;
+    }
+    blocks.push(
+      <p key={`paragraph-${index}`}>
+        {renderInlineFormatting(paragraphLines.join(" "), `paragraph-${index}`)}
+      </p>,
+    );
+  }
+
+  return <>{blocks}</>;
+}
+
 function FeedbackControls({ message, conversation }) {
   const [status, setStatus] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
@@ -436,7 +509,7 @@ export default function App() {
                 ref={isNewestAnswer ? newestAnswerRef : null}
               >
                 <div className="message assistant-message">
-                  {message.content}
+                  <AnswerContent content={message.content} />
                 </div>
                 <FeedbackControls
                   message={message}

@@ -227,6 +227,36 @@ h2 {
 .assistant-message {
   color: #1c2436;
   background: #f5f0ed;
+  white-space: normal;
+}
+
+.assistant-message > :first-child {
+  margin-top: 0;
+}
+
+.assistant-message > :last-child {
+  margin-bottom: 0;
+}
+
+.assistant-message p,
+.assistant-message ol,
+.assistant-message ul {
+  margin: 0 0 10px;
+}
+
+.assistant-message ol,
+.assistant-message ul {
+  padding-left: 1.35rem;
+}
+
+.assistant-message li + li {
+  margin-top: 5px;
+}
+
+.answer-heading {
+  margin: 14px 0 5px;
+  font-size: 1rem;
+  line-height: 1.35;
 }
 
 .answer-block {

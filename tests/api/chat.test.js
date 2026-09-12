@@ -96,7 +96,7 @@ describe("POST /api/chat", () => {
 
     const providerRequest = JSON.parse(providerFetch.mock.calls[0][1].body);
     expect(providerRequest.model).toBe("claude-haiku-4-5-20251001");
-    expect(providerRequest.max_tokens).toBe(400);
+    expect(providerRequest.max_tokens).toBe(250);
     expect(providerRequest.messages).toEqual([
       { role: "user", content: "How can I make meetings easier?" },
     ]);
@@ -291,6 +291,32 @@ describe("POST /api/chat", () => {
     expect(system).toMatch(/uncertain/i);
     expect(system).toMatch(/urgent or emergency/i);
     expect(system).toMatch(/approved resource/i);
+  });
+
+  test("uses a concise response budget unless a detailed explanation is selected", async () => {
+    const providerFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ content: [{ type: "text", text: "Answer" }] }),
+    });
+    vi.stubGlobal("fetch", providerFetch);
+    const handler = await loadHandler();
+
+    await call(handler, {
+      question: "What might help?",
+      sessionId: "session-concise-123456",
+      context: {},
+    });
+    await call(handler, {
+      question: "Please explain this fully.",
+      sessionId: "session-detailed-123456",
+      context: { answerStyle: "detailed-explanation" },
+    });
+
+    const conciseRequest = JSON.parse(providerFetch.mock.calls[0][1].body);
+    const detailedRequest = JSON.parse(providerFetch.mock.calls[1][1].body);
+    expect(conciseRequest.max_tokens).toBeLessThan(detailedRequest.max_tokens);
+    expect(conciseRequest.system).toMatch(/no more than 150 words/i);
+    expect(detailedRequest.system).toMatch(/up to 350 words/i);
   });
 
   test("limits the returned answer and removes links to unapproved hosts", async () => {

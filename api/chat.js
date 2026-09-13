@@ -72,6 +72,16 @@ function limitAndFilterReply(text, config) {
   );
 }
 
+function getResponseTokenBudget(answerStyle, configuredMaximum) {
+  const styleMaximum = {
+    "quick-steps": 220,
+    checklist: 250,
+    examples: 300,
+    "detailed-explanation": 500,
+  }[answerStyle];
+  return Math.min(configuredMaximum, styleMaximum || 250);
+}
+
 function setApiHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -151,7 +161,10 @@ export default async function handler(req, res) {
       signal: controller.signal,
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: config.maxResponseTokens,
+        max_tokens: getResponseTokenBudget(
+          context.answerStyle,
+          config.maxResponseTokens,
+        ),
         system: buildSystemPrompt(context, config.approvedResourceHosts),
         messages,
       }),

@@ -142,6 +142,32 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     expect(screen.getByRole("button", { name: /start again/i })).toBeEnabled();
   });
 
+  test("renders response formatting without exposing Markdown symbols", async () => {
+    const user = userEvent.setup();
+    fetch.mockReturnValueOnce(
+      jsonResponse({
+        reply:
+          "## Practical steps\n\n1. Choose one task.\n2. Set a short timer.\n\n**Next step:** Start with five minutes.",
+        answerId: "ans_formatted",
+      }),
+    );
+    render(<App />);
+
+    await user.type(
+      screen.getByRole("textbox", { name: /your question/i }),
+      "How can I begin?{Enter}",
+    );
+
+    const answer = await screen.findByRole("article", {
+      name: /answer from Ask NeuroThinkHub/i,
+    });
+    expect(
+      within(answer).getByRole("heading", { name: "Practical steps" }),
+    ).toBeVisible();
+    expect(within(answer).getByRole("list")).toBeVisible();
+    expect(within(answer).getByText("Next step:")).toHaveRole("strong");
+  });
+
   test("places accessible feedback controls beneath each answer and submits only minimal feedback by default", async () => {
     const user = userEvent.setup();
     fetch

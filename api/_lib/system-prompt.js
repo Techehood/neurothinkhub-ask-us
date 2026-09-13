@@ -21,7 +21,7 @@ const LABELS = {
   },
 };
 
-export const NEUROTHINKHUB_SYSTEM_PROMPT_VERSION = "pilot-1.0.0";
+export const NEUROTHINKHUB_SYSTEM_PROMPT_VERSION = "pilot-1.1.0";
 
 const NEUROTHINKHUB_SYSTEM_PROMPT = `You are Ask NeuroThinkHub, a pilot providing general guidance about neuroinclusion and practical support. You do not provide a diagnosis and you do not replace medical, legal, safeguarding or emergency support.
 
@@ -41,6 +41,7 @@ Response requirements:
 
 Formatting requirements:
 - Use plain text with short headings and short paragraphs.
+- Put headings on their own line without # or ## Markdown symbols.
 - Use simple numbered steps for a checklist or sequence.
 - Avoid jargon, unexplained abbreviations, long introductions and false reassurance.
 - End with one manageable next step when appropriate.`;
@@ -62,7 +63,15 @@ export function buildSystemPrompt(context = {}, approvedHosts = []) {
     ? selectedContext.join("\n")
     : "The visitor skipped the optional context choices. Do not infer the missing details.";
 
+  const lengthGuidance =
+    context.answerStyle === "detailed-explanation"
+      ? "A detailed explanation was requested. Use up to 350 words, divided into short sections."
+      : "Keep the answer concise: no more than 150 words and three short sections. The visitor can ask a follow-up question.";
+
   return `${NEUROTHINKHUB_SYSTEM_PROMPT}
+
+Length guidance:
+${lengthGuidance}
 
 Approved resource hosts:
 ${approvedHosts.map((host) => `- ${host}`).join("\n")}

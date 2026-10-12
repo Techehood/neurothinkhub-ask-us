@@ -548,3 +548,122 @@ h2 {
     transition-duration: 0.01ms !important;
   }
 }
+/* ============================================================
+   Ask NeuroThinkHub — additions for persona selector + first steps
+   Append to src/styles.css
+   Brand: aubergine #594A66, cream #F2EBD0, terracotta #B86B4A
+   ============================================================ */
+
+.persona-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1rem;
+  background: #FAFAEE;
+  border: 1px solid rgba(89, 74, 102, 0.15);
+  border-radius: 12px;
+}
+
+.persona-panel h2 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.15rem;
+  color: #2D2730;
+}
+
+.persona-panel p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #333333;
+  line-height: 1.5;
+}
+
+.persona-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.persona-chip {
+  padding: 0.55rem 1rem;
+  min-height: 44px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: #2D2730;
+  background: #FFFFFF;
+  border: 1.5px solid #594A66;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.persona-chip:hover {
+  background: #F2EBD0;
+}
+
+.persona-chip:focus-visible {
+  outline: 3px solid #B86B4A;
+  outline-offset: 2px;
+}
+
+.persona-chip.is-active {
+  background: #594A66;
+  color: #FAFAEE;
+  border-color: #594A66;
+}
+
+/* ---- First steps strip ---- */
+
+.first-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  margin: 0 0 1rem 0;
+  list-style: none;
+  background: transparent;
+  border-left: 3px solid #594A66;
+}
+
+.first-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex: 1 1 220px;
+  font-size: 0.95rem;
+  color: #333333;
+  line-height: 1.5;
+}
+
+.first-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  font-weight: 600;
+  color: #FAFAEE;
+  background: #594A66;
+  border-radius: 50%;
+}
+
+/* ---- Mobile ---- */
+
+@media (max-width: 600px) {
+  .persona-panel,
+  .first-steps {
+    padding: 1rem;
+  }
+
+  .persona-chip {
+    width: 100%;
+    text-align: center;
+  }
+
+  .first-steps {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}

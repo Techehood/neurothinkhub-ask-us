@@ -1,20 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import "./styles.css";
-
+ 
 const MAX_QUESTION_CHARACTERS = 1500;
-
+ 
+const PERSONA_OPTIONS = [
+  ["neurodivergent", "Neurodivergent"],
+  ["manager", "Manager"],
+  ["hr-ld", "HR / L&D"],
+  ["parent-family", "Parent / Family"],
+  ["educator", "Educator"],
+  ["entrepreneur", "Entrepreneur"],
+];
+ 
+const FIRST_STEPS = [
+  "Share who you are (optional).",
+  "Describe your situation or question.",
+  "Ask follow-up questions to go deeper.",
+];
+ 
 const CONTEXT_FIELDS = [
-  {
-    key: "supportFor",
-    label: "Who are you seeking support for?",
-    options: [
-      ["myself", "Myself"],
-      ["learner", "A learner"],
-      ["employee", "An employee"],
-      ["family-member", "A family member"],
-      ["team", "A team"],
-    ],
-  },
   {
     key: "setting",
     label: "Where is support needed?",
@@ -37,13 +41,13 @@ const CONTEXT_FIELDS = [
     ],
   },
 ];
-
+ 
 const STARTER_PROMPTS = [
   "What could make it easier to start a difficult task?",
   "How can instructions be made clearer and easier to follow?",
   "What practical support could help in a busy environment?",
 ];
-
+ 
 const SIDE_ITEMS = {
   left: [
     "ADHD",
@@ -62,19 +66,77 @@ const SIDE_ITEMS = {
     "Workshops",
   ],
 };
-
+ 
 function createSessionId() {
   if (globalThis.crypto?.randomUUID)
     return `session_${globalThis.crypto.randomUUID()}`;
   return `session_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 }
-
+ 
+function PersonaSelector({ persona, onChange }) {
+  return (
+    <section className="persona-panel" aria-labelledby="persona-heading">
+      <div className="section-heading-row">
+        <div>
+          <h2 id="persona-heading">I am…</h2>
+          <p>Choose one so answers can speak to your situation. This is optional.</p>
+        </div>
+        {persona && (
+          <button
+            className="text-button"
+            type="button"
+            onClick={() => onChange("")}
+          >
+            Skip / clear
+          </button>
+        )}
+      </div>
+      <div
+        className="persona-grid"
+        role="radiogroup"
+        aria-label="I am…"
+      >
+        {PERSONA_OPTIONS.map(([value, label]) => {
+          const isActive = persona === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={isActive}
+              className={isActive ? "persona-chip is-active" : "persona-chip"}
+              onClick={() => onChange(isActive ? "" : value)}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+ 
+function FirstSteps() {
+  return (
+    <ol className="first-steps" aria-label="How to use Ask NeuroThinkHub">
+      {FIRST_STEPS.map((step, index) => (
+        <li key={step}>
+          <span className="first-step-number" aria-hidden="true">
+            {index + 1}
+          </span>
+          <span>{step}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+ 
 function ContextChoices({ context, onChange }) {
   return (
     <section className="context-panel" aria-labelledby="context-heading">
       <div className="section-heading-row">
         <div>
-          <h2 id="context-heading">Optional choices</h2>
+          <h2 id="context-heading">Optional preferences</h2>
           <p>Choose any that help, or skip them and ask your question now.</p>
         </div>
         {Object.keys(context).length > 0 && (
@@ -115,7 +177,7 @@ function ContextChoices({ context, onChange }) {
     </section>
   );
 }
-
+ 
 function SidePanel({ title, items }) {
   return (
     <aside className="side-panel" aria-label={title}>
@@ -133,7 +195,7 @@ function SidePanel({ title, items }) {
     </aside>
   );
 }
-
+ 
 function renderInlineFormatting(text, keyPrefix) {
   return text.split(/(\*\*[^*]+\*\*)/g).map((part, index) => {
     if (part.startsWith("**") && part.endsWith("**")) {
@@ -142,18 +204,18 @@ function renderInlineFormatting(text, keyPrefix) {
     return part;
   });
 }
-
+ 
 function AnswerContent({ content }) {
   const lines = content.replace(/\r/g, "").split("\n");
   const blocks = [];
-
+ 
   for (let index = 0; index < lines.length;) {
     const line = lines[index].trim();
     if (!line) {
       index += 1;
       continue;
     }
-
+ 
     const heading = line.match(/^#{1,6}\s+(.+)$/);
     if (heading) {
       blocks.push(
@@ -164,7 +226,7 @@ function AnswerContent({ content }) {
       index += 1;
       continue;
     }
-
+ 
     const ordered = line.match(/^\d+[.)]\s+(.+)$/);
     const unordered = line.match(/^[-*]\s+(.+)$/);
     if (ordered || unordered) {
@@ -184,7 +246,7 @@ function AnswerContent({ content }) {
       blocks.push(<List key={`list-${index}`}>{items}</List>);
       continue;
     }
-
+ 
     const paragraphLines = [line];
     index += 1;
     while (
@@ -203,16 +265,16 @@ function AnswerContent({ content }) {
       </p>,
     );
   }
-
+ 
   return <>{blocks}</>;
 }
-
+ 
 function FeedbackControls({ message, conversation }) {
   const [status, setStatus] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
   const [detail, setDetail] = useState("");
   const [includeConversation, setIncludeConversation] = useState(false);
-
+ 
   async function submitFeedback(rating, extra = {}) {
     setStatus("Sending feedback…");
     try {
@@ -228,7 +290,7 @@ function FeedbackControls({ message, conversation }) {
       setStatus("Feedback could not be sent. Please try again.");
     }
   }
-
+ 
   function submitConcern(event) {
     event.preventDefault();
     submitFeedback("concern", {
@@ -237,7 +299,7 @@ function FeedbackControls({ message, conversation }) {
       ...(includeConversation ? { conversation } : {}),
     });
   }
-
+ 
   return (
     <div className="feedback">
       <div
@@ -259,7 +321,7 @@ function FeedbackControls({ message, conversation }) {
           Report a concern
         </button>
       </div>
-
+ 
       {reportOpen && (
         <form className="concern-form" onSubmit={submitConcern}>
           <label>
@@ -283,7 +345,7 @@ function FeedbackControls({ message, conversation }) {
           <button type="submit">Send concern report</button>
         </form>
       )}
-
+ 
       {status && (
         <p className="feedback-status" aria-live="polite">
           {status}
@@ -292,8 +354,9 @@ function FeedbackControls({ message, conversation }) {
     </div>
   );
 }
-
+ 
 export default function App() {
+  const [persona, setPersona] = useState("");
   const [context, setContext] = useState({});
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -305,16 +368,16 @@ export default function App() {
   const newestAnswerRef = useRef(null);
   const recognitionRef = useRef(null);
   const sessionIdRef = useRef(createSessionId());
-
+ 
   const SpeechRecognitionAPI =
     typeof window !== "undefined"
       ? window.SpeechRecognition || window.webkitSpeechRecognition
       : null;
-
+ 
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
     if (lastMessage?.role !== "assistant" || !newestAnswerRef.current) return;
-
+ 
     const reduceMotion = window.matchMedia?.(
       "(prefers-reduced-motion: reduce)",
     ).matches;
@@ -325,28 +388,31 @@ export default function App() {
     newestAnswerRef.current.focus({ preventScroll: true });
     setAnnouncement("Answer ready.");
   }, [messages]);
-
+ 
   async function sendMessage(text) {
     const question = (text ?? input).trim();
     if (!question || loading) return;
-
+ 
     const history = messages.map(({ role, content }) => ({ role, content }));
     setMessages((current) => [...current, { role: "user", content: question }]);
     setInput("");
     setLoading(true);
     setError("");
     setAnnouncement("");
-
+ 
     try {
+      const mergedContext = Object.fromEntries(
+        Object.entries(context).filter(([, value]) => value),
+      );
+      if (persona) mergedContext.persona = persona;
+ 
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question,
           history,
-          context: Object.fromEntries(
-            Object.entries(context).filter(([, value]) => value),
-          ),
+          context: mergedContext,
           sessionId: sessionIdRef.current,
         }),
       });
@@ -355,7 +421,7 @@ export default function App() {
         throw new Error(
           data.error || "Something went wrong. Please try again.",
         );
-
+ 
       setMessages((current) => [
         ...current,
         { role: "assistant", content: data.reply, answerId: data.answerId },
@@ -370,21 +436,21 @@ export default function App() {
       setLoading(false);
     }
   }
-
+ 
   function handleKeyDown(event) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       sendMessage();
     }
   }
-
+ 
   function toggleListening() {
     if (!SpeechRecognitionAPI || loading) return;
     if (listening) {
       recognitionRef.current?.stop();
       return;
     }
-
+ 
     const recognition = new SpeechRecognitionAPI();
     recognition.lang = "en-GB";
     recognition.continuous = false;
@@ -402,7 +468,7 @@ export default function App() {
     recognition.start();
     setListening(true);
   }
-
+ 
   function startAgain() {
     if (
       !window.confirm(
@@ -417,16 +483,20 @@ export default function App() {
     sessionIdRef.current = createSessionId();
     inputRef.current?.focus();
   }
-
+ 
   const conversationForFeedback = messages.map(({ role, content }) => ({
     role,
     content,
   }));
-
+ 
+  const placeholder = listening
+    ? "Listening…"
+    : "Describe your situation or ask a question…";
+ 
   return (
     <div className="app-shell">
       <SidePanel title="Neurodiversity topics" items={SIDE_ITEMS.left} />
-
+ 
       <main className="chat-card">
         <header className="app-header">
           <div className="title-row">
@@ -463,9 +533,13 @@ export default function App() {
             records or confidential workplace information.
           </p>
         </header>
-
+ 
+        <PersonaSelector persona={persona} onChange={setPersona} />
+ 
+        <FirstSteps />
+ 
         <ContextChoices context={context} onChange={setContext} />
-
+ 
         <section className="conversation" aria-label="Conversation">
           {messages.length === 0 && (
             <div className="starters">
@@ -481,14 +555,14 @@ export default function App() {
               ))}
             </div>
           )}
-
+ 
           {messages.map((message, index) => {
             const isNewestAnswer =
               message.role === "assistant" &&
               !messages
                 .slice(index + 1)
                 .some((later) => later.role === "assistant");
-
+ 
             if (message.role === "user") {
               return (
                 <div
@@ -499,7 +573,7 @@ export default function App() {
                 </div>
               );
             }
-
+ 
             return (
               <article
                 className="answer-block"
@@ -518,7 +592,7 @@ export default function App() {
               </article>
             );
           })}
-
+ 
           {loading && (
             <p className="loading-status" role="status">
               Preparing your answer…
@@ -533,7 +607,7 @@ export default function App() {
             {announcement}
           </p>
         </section>
-
+ 
         <div className="composer">
           <label htmlFor="question">Your question</label>
           <div className="composer-row">
@@ -545,7 +619,7 @@ export default function App() {
               onKeyDown={handleKeyDown}
               disabled={loading}
               maxLength={MAX_QUESTION_CHARACTERS}
-              placeholder={listening ? "Listening…" : "Type your question…"}
+              placeholder={placeholder}
               rows={2}
             />
             {SpeechRecognitionAPI && (
@@ -578,7 +652,7 @@ export default function App() {
           </p>
         </div>
       </main>
-
+ 
       <SidePanel title="Support options" items={SIDE_ITEMS.right} />
     </div>
   );

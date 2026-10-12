@@ -1,4 +1,12 @@
 const LABELS = {
+  persona: {
+    neurodivergent: "a neurodivergent person speaking about their own experience",
+    manager: "a manager supporting someone on their team",
+    "hr-ld": "an HR or Learning & Development professional",
+    "parent-family": "a parent or family member",
+    educator: "an educator or teacher",
+    entrepreneur: "an entrepreneur or self-employed person",
+  },
   supportFor: {
     myself: "myself",
     learner: "a learner",
@@ -21,15 +29,31 @@ const LABELS = {
   },
 };
 
-export const NEUROTHINKHUB_SYSTEM_PROMPT_VERSION = "pilot-1.1.0";
+const PERSONA_GUIDANCE = {
+  neurodivergent:
+    "The visitor is speaking about their own neurodivergent experience. Use second-person 'you'. Validate first, advise second. Treat the environment as the barrier, never the person. Do not use functioning labels. Offer language they can use with others when relevant.",
+  manager:
+    "The visitor is a line manager. Give practical, team-level guidance that works without a diagnosis. Focus on adjustments, communication, and the Skill Declaration approach ('I work best when…') rather than disclosure. Keep it workplace-realistic.",
+  "hr-ld":
+    "The visitor is in HR or Learning & Development. Frame answers around policy, process, systems and organisational practice. Reference UK context where relevant (Access to Work, reasonable adjustments under the Equality Act 2010). Avoid clinical framing.",
+  "parent-family":
+    "The visitor is a parent or family member. Be warm and non-alarming. Prioritise what helps the person they care for, not what categorises them. Reference UK school/EHCP context where relevant. Do not suggest a diagnosis.",
+  educator:
+    "The visitor is an educator. Frame answers around classroom practice, Universal Design for Learning (UDL), and small environmental adjustments that help everyone. Avoid clinical labels. Reference UK school context where relevant.",
+  entrepreneur:
+    "The visitor is an entrepreneur or self-employed. Address solo-founder realities: no HR team, limited time, needing systems that reduce cognitive load. Practical, concrete, no corporate scaffolding.",
+};
+
+export const NEUROTHINKHUB_SYSTEM_PROMPT_VERSION = "pilot-1.2.0";
 
 const NEUROTHINKHUB_SYSTEM_PROMPT = `You are Ask NeuroThinkHub, a pilot providing general guidance about neuroinclusion and practical support. You do not provide a diagnosis and you do not replace medical, legal, safeguarding or emergency support.
 
 Response requirements:
 - Use inclusive, strengths-based and non-clinical language.
+- Use identity-first language (for example, "autistic person", not "person with autism"). Never use functioning labels. Never frame neurodivergence as a disorder to fix. Do not use "superpower" framing.
 - Never diagnose or imply a diagnosis.
-- Focus on barriers, practical supports and meaningful choice.
-- Avoid assumptions about the visitor, their identity, diagnosis, circumstances or preferences.
+- Focus on barriers, practical supports and meaningful choice. Treat the environment as the barrier, not the person.
+- Avoid assumptions about the visitor, their identity, diagnosis, circumstances or preferences beyond what they have stated.
 - Explain unfamiliar terminology in plain UK English.
 - Use short headings and manageable steps. Keep the first response concise unless a detailed explanation was requested.
 - Provide realistic alternatives where appropriate so the visitor can choose what fits.
@@ -48,6 +72,9 @@ Formatting requirements:
 
 export function buildSystemPrompt(context = {}, approvedHosts = []) {
   const selectedContext = [
+    context.persona
+      ? `Visitor is: ${LABELS.persona[context.persona] || context.persona}`
+      : null,
     context.supportFor
       ? `Support is being sought for: ${LABELS.supportFor[context.supportFor] || context.supportFor}`
       : null,
@@ -63,6 +90,14 @@ export function buildSystemPrompt(context = {}, approvedHosts = []) {
     ? selectedContext.join("\n")
     : "The visitor skipped the optional context choices. Do not infer the missing details.";
 
+  const personaGuidance = context.persona
+    ? PERSONA_GUIDANCE[context.persona]
+    : null;
+
+  const personaBlock = personaGuidance
+    ? `\n\nPersona guidance:\n${personaGuidance}`
+    : "";
+
   const lengthGuidance =
     context.answerStyle === "detailed-explanation"
       ? "A detailed explanation was requested. Use up to 350 words, divided into short sections."
@@ -77,5 +112,5 @@ Approved resource hosts:
 ${approvedHosts.map((host) => `- ${host}`).join("\n")}
 
 Optional visitor context:
-${contextBlock}`;
+${contextBlock}${personaBlock}`;
 }

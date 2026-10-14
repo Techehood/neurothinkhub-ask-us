@@ -1,3 +1,5 @@
+
+App · JSX
 import { useEffect, useRef, useState } from "react";
 import "./styles.css";
  
@@ -48,22 +50,24 @@ const STARTER_PROMPTS = [
   "What practical support could help in a busy environment?",
 ];
  
+const SPECTRUM_GRID_URL = "https://neurothinkhub.com/spectrum-grid/";
+ 
 const SIDE_ITEMS = {
   left: [
-    "ADHD",
-    "Dyslexia",
-    "Autism",
-    "Dyspraxia",
-    "Dyscalculia",
-    "Sensory processing",
+    { label: "ADHD", href: SPECTRUM_GRID_URL },
+    { label: "Dyslexia", href: SPECTRUM_GRID_URL },
+    { label: "Autism", href: SPECTRUM_GRID_URL },
+    { label: "Dyspraxia", href: SPECTRUM_GRID_URL },
+    { label: "Dyscalculia", href: SPECTRUM_GRID_URL },
+    { label: "Sensory processing", href: SPECTRUM_GRID_URL },
   ],
   right: [
-    "Self-discovery",
-    "Workplace tools",
-    "The Bridge",
-    "Coaching",
-    "Community",
-    "Workshops",
+    { label: "Self-discovery" },
+    { label: "Workplace tools" },
+    { label: "The Bridge" },
+    { label: "Coaching" },
+    { label: "Community" },
+    { label: "Workshops" },
   ],
 };
  
@@ -189,7 +193,20 @@ function SidePanel({ title, items }) {
       <h2>{title}</h2>
       <ul>
         {items.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item.label}>
+            {item.href ? (
+              <a
+                className="side-panel-link"
+                href={item.href}
+                target="_top"
+                rel="noopener"
+              >
+                {item.label}
+              </a>
+            ) : (
+              item.label
+            )}
+          </li>
         ))}
       </ul>
     </aside>
@@ -657,3 +674,4 @@ export default function App() {
     </div>
   );
 }
+ 

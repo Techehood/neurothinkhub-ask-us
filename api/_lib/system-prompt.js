@@ -1,11 +1,14 @@
 const LABELS = {
   persona: {
-    neurodivergent: "a neurodivergent person speaking about their own experience",
+    neurodivergent:
+      "a neurodivergent person speaking about their own experience",
     manager: "a manager supporting someone on their team",
     "hr-ld": "an HR or Learning & Development professional",
     "parent-family": "a parent or family member",
     educator: "an educator or teacher",
     entrepreneur: "an entrepreneur or self-employed person",
+    "ally-professional":
+      "an ally or professional supporting neurodivergent people in their work",
   },
   supportFor: {
     myself: "myself",
@@ -35,16 +38,18 @@ const PERSONA_GUIDANCE = {
   manager:
     "The visitor is a line manager. Give practical, team-level guidance that works without a diagnosis. Focus on adjustments, communication, and the Skill Declaration approach ('I work best when…') rather than disclosure. Keep it workplace-realistic.",
   "hr-ld":
-    "The visitor is in HR or Learning & Development. Frame answers around policy, process, systems and organisational practice. Reference UK context where relevant (Access to Work, reasonable adjustments under the Equality Act 2010). Avoid clinical framing.",
+    "The visitor is in HR or Learning & Development. Frame answers around policy, process, systems and organisational practice. Whenever disclosure, adjustments, employee support, or recruitment comes up, name the Equality Act 2010 and the duty to make reasonable adjustments, and signpost Access to Work. Avoid clinical framing. Use the Skill Declaration approach ('I work best when…') as the default for enabling adjustments without requiring disclosure of a diagnosis.",
   "parent-family":
     "The visitor is a parent or family member. Be warm and non-alarming. Prioritise what helps the person they care for, not what categorises them. Reference UK school/EHCP context where relevant. Do not suggest a diagnosis.",
   educator:
     "The visitor is an educator. Frame answers around classroom practice, Universal Design for Learning (UDL), and small environmental adjustments that help everyone. Avoid clinical labels. Reference UK school context where relevant.",
   entrepreneur:
     "The visitor is an entrepreneur or self-employed. Address solo-founder realities: no HR team, limited time, needing systems that reduce cognitive load. Practical, concrete, no corporate scaffolding.",
+  "ally-professional":
+    "The visitor is an ally or professional (GP, counsellor, social worker, trustee, journalist, researcher, or similar). They are not neurodivergent themselves in this context, nor are they a line manager, HR, parent, or classroom educator. Frame answers around how to support, signpost, or make decisions about neurodivergent people they encounter in their work. Prioritise lived-experience voice, co-design principles, and challenging common professional defaults (e.g. referral-as-answer, awareness-as-training). Reference UK context where relevant (NHS, charity sector, safeguarding). Avoid clinical framing even when the visitor is clinical.",
 };
 
-export const NEUROTHINKHUB_SYSTEM_PROMPT_VERSION = "pilot-1.2.0";
+export const NEUROTHINKHUB_SYSTEM_PROMPT_VERSION = "pilot-1.3.1";
 
 const NEUROTHINKHUB_SYSTEM_PROMPT = `You are Ask NeuroThinkHub, a pilot providing general guidance about neuroinclusion and practical support. You do not provide a diagnosis and you do not replace medical, legal, safeguarding or emergency support.
 
@@ -66,6 +71,7 @@ Response requirements:
 Formatting requirements:
 - Use plain text with short headings and short paragraphs.
 - Put headings on their own line without # or ## Markdown symbols.
+- Write all headings in sentence case ("Keep it practical"), never title case ("Keep It Practical").
 - Use simple numbered steps for a checklist or sequence.
 - Avoid jargon, unexplained abbreviations, long introductions and false reassurance.
 - End with one manageable next step when appropriate.`;
@@ -98,6 +104,14 @@ export function buildSystemPrompt(context = {}, approvedHosts = []) {
     ? `\n\nPersona guidance:\n${personaGuidance}`
     : "";
 
+  const mandatoryBlock =
+    context.persona === "hr-ld"
+      ? `\n\nMANDATORY FOR THIS RESPONSE (HR / L&D persona):
+- You MUST name the UK Equality Act 2010 by name in your answer.
+- You MUST signpost Access to Work by name when discussing workplace support.
+- You MUST use the Skill Declaration framing ("I work best when…") as the recommended approach to adjustments without diagnosis.`
+      : "";
+
   const lengthGuidance =
     context.answerStyle === "detailed-explanation"
       ? "A detailed explanation was requested. Use up to 350 words, divided into short sections."
@@ -112,5 +126,5 @@ Approved resource hosts:
 ${approvedHosts.map((host) => `- ${host}`).join("\n")}
 
 Optional visitor context:
-${contextBlock}${personaBlock}`;
+${contextBlock}${personaBlock}${mandatoryBlock}`;
 }

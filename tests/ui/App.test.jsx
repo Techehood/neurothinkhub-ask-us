@@ -53,12 +53,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     );
     render(<App />);
 
-    await user.selectOptions(
-      screen.getByRole("combobox", {
-        name: /who are you seeking support for/i,
-      }),
-      "learner",
-    );
+    await user.click(screen.getByRole("radio", { name: "Educator" }));
     await user.selectOptions(
       screen.getByRole("combobox", { name: /where is support needed/i }),
       "education",
@@ -76,27 +71,24 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     await screen.findByText("Try this.");
     const request = JSON.parse(fetch.mock.calls[0][1].body);
     expect(request.context).toEqual({
-      supportFor: "learner",
+      persona: "educator",
       setting: "education",
       answerStyle: "examples",
     });
-    expect(
-      screen.getByRole("combobox", {
-        name: /who are you seeking support for/i,
-      }),
-    ).toHaveValue("learner");
-
-    await user.selectOptions(
-      screen.getByRole("combobox", {
-        name: /who are you seeking support for/i,
-      }),
-      "team",
+    expect(screen.getByRole("radio", { name: "Educator" })).toHaveAttribute(
+      "aria-checked",
+      "true",
     );
-    expect(
-      screen.getByRole("combobox", {
-        name: /who are you seeking support for/i,
-      }),
-    ).toHaveValue("team");
+
+    await user.click(screen.getByRole("radio", { name: "Manager" }));
+    expect(screen.getByRole("radio", { name: "Manager" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    expect(screen.getByRole("radio", { name: "Educator" })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
   });
 
   test("provides accessible names, text loading status, a polite completion announcement and predictable answer focus", async () => {

@@ -155,6 +155,9 @@ describe("POST /api/chat", () => {
     expect(system).toContain("NHS 111");
     expect(system).toContain("Samaritans — call 116 123");
     expect(system).toContain("SHOUT — text SHOUT to 85258");
+    expect(system).toContain(
+      "If there is immediate risk to life, 999 and A&E remain the first response.",
+    );
   });
 
   test("drops an unknown persona value", async () => {

@@ -135,6 +135,31 @@ describe("POST /api/chat", () => {
     );
   });
 
+  test("hard-codes UK crisis signposting numbers in the system prompt", async () => {
+    const providerFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ content: [{ type: "text", text: "Try this." }] }),
+    });
+    vi.stubGlobal("fetch", providerFetch);
+    const handler = await loadHandler();
+
+    await call(handler, {
+      question: "I'm struggling and don't know who to talk to",
+      history: [],
+      sessionId: "session-safety-123456",
+      context: {},
+    });
+
+    const { system } = JSON.parse(providerFetch.mock.calls[0][1].body);
+    expect(system).toContain("999 or A&E");
+    expect(system).toContain("NHS 111");
+    expect(system).toContain("Samaritans — call 116 123");
+    expect(system).toContain("SHOUT — text SHOUT to 85258");
+    expect(system).toContain(
+      "If there is immediate risk to life, 999 and A&E remain the first response.",
+    );
+  });
+
   test("drops an unknown persona value", async () => {
     const providerFetch = vi.fn().mockResolvedValue({
       ok: true,

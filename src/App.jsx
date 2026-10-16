@@ -10,6 +10,7 @@ const PERSONA_OPTIONS = [
   ["parent-family", "Parent / Family"],
   ["educator", "Educator"],
   ["entrepreneur", "Entrepreneur"],
+  ["ally-professional", "Ally / Professional"],
 ];
 
 const FIRST_STEPS = [

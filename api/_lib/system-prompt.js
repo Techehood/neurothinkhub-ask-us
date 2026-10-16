@@ -7,6 +7,8 @@ const LABELS = {
     "parent-family": "a parent or family member",
     educator: "an educator or teacher",
     entrepreneur: "an entrepreneur or self-employed person",
+    "ally-professional":
+      "an ally or professional supporting neurodivergent people in their work",
   },
   supportFor: {
     myself: "myself",
@@ -43,6 +45,8 @@ const PERSONA_GUIDANCE = {
     "The visitor is an educator. Frame answers around classroom practice, Universal Design for Learning (UDL), and small environmental adjustments that help everyone. Avoid clinical labels. Reference UK school context where relevant.",
   entrepreneur:
     "The visitor is an entrepreneur or self-employed. Address solo-founder realities: no HR team, limited time, needing systems that reduce cognitive load. Practical, concrete, no corporate scaffolding.",
+  "ally-professional":
+    "The visitor is an ally or professional (GP, counsellor, social worker, trustee, journalist, researcher, or similar). They are not neurodivergent themselves in this context, nor are they a line manager, HR, parent, or classroom educator. Frame answers around how to support, signpost, or make decisions about neurodivergent people they encounter in their work. Prioritise lived-experience voice, co-design principles, and challenging common professional defaults (e.g. referral-as-answer, awareness-as-training). Reference UK context where relevant (NHS, charity sector, safeguarding). Avoid clinical framing even when the visitor is clinical.",
 };
 
 export const NEUROTHINKHUB_SYSTEM_PROMPT_VERSION = "pilot-1.2.0";

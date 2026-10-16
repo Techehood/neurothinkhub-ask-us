@@ -179,7 +179,7 @@ function ContextChoices({ context, onChange }) {
   );
 }
 
-function SidePanel({ title, items }) {
+function SidePanel({ title, titleHref, items }) {
   return (
     <aside className="side-panel" aria-label={title}>
       <div className="tree-mark" aria-hidden="true">
@@ -187,7 +187,20 @@ function SidePanel({ title, items }) {
         <span />
         <span />
       </div>
-      <h2>{title}</h2>
+      <h2>
+        {titleHref ? (
+          <a
+            className="side-panel-link"
+            href={titleHref}
+            target="_top"
+            rel="noopener"
+          >
+            {title}
+          </a>
+        ) : (
+          title
+        )}
+      </h2>
       <ul>
         {items.map((item) => (
           <li key={item.label}>
@@ -509,13 +522,16 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <SidePanel title="Neurodiversity topics" items={SIDE_ITEMS.left} />
+      <SidePanel
+        title="Neurodiversity topics"
+        titleHref={SPECTRUM_GRID_URL}
+        items={SIDE_ITEMS.left}
+      />
 
       <main className="chat-card">
         <header className="app-header">
           <div className="title-row">
             <div>
-              <p className="eyebrow">Pilot</p>
               <h1>Ask NeuroThinkHub</h1>
             </div>
             {messages.length > 0 && (
@@ -531,11 +547,9 @@ export default function App() {
           <div
             className="pilot-notice"
             role="note"
-            aria-label="Pilot information"
+            aria-label="About Ask NeuroThinkHub"
           >
-            <strong>
-              Ask NeuroThinkHub is a pilot providing general guidance.
-            </strong>
+            <strong>Ask NeuroThinkHub provides general guidance.</strong>
             <span>
               {" "}
               It does not diagnose or replace medical, legal, safeguarding or

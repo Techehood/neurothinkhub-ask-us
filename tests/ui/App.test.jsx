@@ -17,14 +17,20 @@ beforeEach(() => {
 });
 
 describe("Ask NeuroThinkHub pilot UI", () => {
-  test("shows the pilot and privacy notices and permits an immediate question without selections", async () => {
+  test("shows the guidance and privacy notices and permits an immediate question without selections", async () => {
     const user = userEvent.setup();
     fetch.mockReturnValueOnce(
       jsonResponse({ reply: "A manageable answer.", answerId: "ans_1" }),
     );
     render(<App />);
 
-    expect(screen.getByText(/pilot providing general guidance/i)).toBeVisible();
+    expect(
+      screen.getByText(/ask neurothinkhub provides general guidance/i),
+    ).toBeVisible();
+    expect(screen.queryByText(/\bpilot\b/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Neurodiversity topics" }),
+    ).toHaveAttribute("href", "https://neurothinkhub.com/spectrum-grid/");
     expect(
       screen.getByText(
         /does not diagnose or replace medical, legal, safeguarding or emergency support/i,

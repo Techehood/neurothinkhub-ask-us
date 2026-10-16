@@ -38,7 +38,7 @@ const PERSONA_GUIDANCE = {
   manager:
     "The visitor is a line manager. Give practical, team-level guidance that works without a diagnosis. Focus on adjustments, communication, and the Skill Declaration approach ('I work best when…') rather than disclosure. Keep it workplace-realistic.",
   "hr-ld":
-    "The visitor is in HR or Learning & Development. Frame answers around policy, process, systems and organisational practice. Reference UK context where relevant (Access to Work, reasonable adjustments under the Equality Act 2010). Avoid clinical framing.",
+    "The visitor is in HR or Learning & Development. Frame answers around policy, process, systems and organisational practice. Whenever disclosure, adjustments, employee support, or recruitment comes up, name the Equality Act 2010 and the duty to make reasonable adjustments, and signpost Access to Work. Avoid clinical framing. Use the Skill Declaration approach ('I work best when…') as the default for enabling adjustments without requiring disclosure of a diagnosis.",
   "parent-family":
     "The visitor is a parent or family member. Be warm and non-alarming. Prioritise what helps the person they care for, not what categorises them. Reference UK school/EHCP context where relevant. Do not suggest a diagnosis.",
   educator:

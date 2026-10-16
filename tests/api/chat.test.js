@@ -109,6 +109,52 @@ describe("POST /api/chat", () => {
     );
   });
 
+  test("passes the persona through so persona guidance and the HR mandatory block reach the model", async () => {
+    const providerFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ content: [{ type: "text", text: "Try this." }] }),
+    });
+    vi.stubGlobal("fetch", providerFetch);
+    const handler = await loadHandler();
+
+    const res = await call(handler, {
+      question: "How do we support disclosure without forcing it?",
+      history: [],
+      sessionId: "session-persona-123456",
+      context: { persona: "hr-ld" },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const { system } = JSON.parse(providerFetch.mock.calls[0][1].body);
+    expect(system).toContain(
+      "Visitor is: an HR or Learning & Development professional",
+    );
+    expect(system).toContain("Persona guidance:");
+    expect(system.trimEnd()).toMatch(
+      /MANDATORY FOR THIS RESPONSE \(HR \/ L&D persona\):[\s\S]*diagnosis\.$/,
+    );
+  });
+
+  test("drops an unknown persona value", async () => {
+    const providerFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ content: [{ type: "text", text: "Try this." }] }),
+    });
+    vi.stubGlobal("fetch", providerFetch);
+    const handler = await loadHandler();
+
+    await call(handler, {
+      question: "Hello",
+      history: [],
+      sessionId: "session-persona-654321",
+      context: { persona: "not-a-persona" },
+    });
+
+    const { system } = JSON.parse(providerFetch.mock.calls[0][1].body);
+    expect(system).not.toContain("Persona guidance:");
+    expect(system).not.toContain("not-a-persona");
+  });
+
   test.each([
     [undefined, "Please enter a question."],
     ["", "Please enter a question."],

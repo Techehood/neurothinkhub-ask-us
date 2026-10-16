@@ -5,6 +5,16 @@ import { checkRequestLimits } from "./_lib/rate-limit.js";
 
 const MODEL = "claude-haiku-4-5-20251001";
 const CONTEXT_VALUES = {
+  // persona is a first-class routing field — do not strip
+  persona: [
+    "neurodivergent",
+    "manager",
+    "hr-ld",
+    "parent-family",
+    "educator",
+    "entrepreneur",
+    "ally-professional",
+  ],
   supportFor: ["myself", "learner", "employee", "family-member", "team"],
   setting: ["education", "workplace", "home", "wellbeing", "entrepreneurship"],
   answerStyle: ["quick-steps", "checklist", "examples", "detailed-explanation"],

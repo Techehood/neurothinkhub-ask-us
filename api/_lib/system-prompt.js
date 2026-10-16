@@ -49,7 +49,7 @@ const PERSONA_GUIDANCE = {
     "The visitor is an ally or professional (GP, counsellor, social worker, trustee, journalist, researcher, or similar). They are not neurodivergent themselves in this context, nor are they a line manager, HR, parent, or classroom educator. Frame answers around how to support, signpost, or make decisions about neurodivergent people they encounter in their work. Prioritise lived-experience voice, co-design principles, and challenging common professional defaults (e.g. referral-as-answer, awareness-as-training). Reference UK context where relevant (NHS, charity sector, safeguarding). Avoid clinical framing even when the visitor is clinical.",
 };
 
-export const NEUROTHINKHUB_SYSTEM_PROMPT_VERSION = "pilot-1.3.0";
+export const NEUROTHINKHUB_SYSTEM_PROMPT_VERSION = "pilot-1.3.1";
 
 const NEUROTHINKHUB_SYSTEM_PROMPT = `You are Ask NeuroThinkHub, a pilot providing general guidance about neuroinclusion and practical support. You do not provide a diagnosis and you do not replace medical, legal, safeguarding or emergency support.
 
@@ -104,6 +104,14 @@ export function buildSystemPrompt(context = {}, approvedHosts = []) {
     ? `\n\nPersona guidance:\n${personaGuidance}`
     : "";
 
+  const mandatoryBlock =
+    context.persona === "hr-ld"
+      ? `\n\nMANDATORY FOR THIS RESPONSE (HR / L&D persona):
+- You MUST name the UK Equality Act 2010 by name in your answer.
+- You MUST signpost Access to Work by name when discussing workplace support.
+- You MUST use the Skill Declaration framing ("I work best when…") as the recommended approach to adjustments without diagnosis.`
+      : "";
+
   const lengthGuidance =
     context.answerStyle === "detailed-explanation"
       ? "A detailed explanation was requested. Use up to 350 words, divided into short sections."
@@ -118,5 +126,5 @@ Approved resource hosts:
 ${approvedHosts.map((host) => `- ${host}`).join("\n")}
 
 Optional visitor context:
-${contextBlock}${personaBlock}`;
+${contextBlock}${personaBlock}${mandatoryBlock}`;
 }

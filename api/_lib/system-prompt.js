@@ -1,6 +1,7 @@
 const LABELS = {
   persona: {
-    neurodivergent: "a neurodivergent person speaking about their own experience",
+    neurodivergent:
+      "a neurodivergent person speaking about their own experience",
     manager: "a manager supporting someone on their team",
     "hr-ld": "an HR or Learning & Development professional",
     "parent-family": "a parent or family member",

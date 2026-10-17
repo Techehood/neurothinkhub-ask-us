@@ -10,5 +10,16 @@
     "api/feedback.js": {
       "maxDuration": 10
     }
-  }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Permissions-Policy",
+          "value": "microphone=(self \"https://neurothinkhub.com\")"
+        }
+      ]
+    }
+  ]
 }

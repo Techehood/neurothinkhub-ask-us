@@ -13,6 +13,51 @@ const PERSONA_OPTIONS = [
   ["ally-professional", "Ally / Professional"],
 ];
 
+const VOICE_MESSAGES = {
+  unsupported:
+    "Voice input works in Chrome and Edge. In this browser, please type your question.",
+  blocked:
+    "The microphone is blocked. Allow microphone access in your browser settings, or type your question.",
+  noSpeech: "We didn't hear anything. Try again, or type your question.",
+  failed: "Voice input isn't working here. Please type your question instead.",
+};
+
+function MicIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0" />
+      <path d="M12 18v3" />
+    </svg>
+  );
+}
+
+function StopIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      fill="currentColor"
+    >
+      <rect x="6" y="6" width="12" height="12" rx="2" />
+    </svg>
+  );
+}
+
 const FIRST_STEPS = [
   "Share who you are (optional).",
   "Describe your situation or question.",
@@ -391,6 +436,7 @@ export default function App() {
   const [error, setError] = useState("");
   const [announcement, setAnnouncement] = useState("");
   const [listening, setListening] = useState(false);
+  const [voiceMessage, setVoiceMessage] = useState("");
   const inputRef = useRef(null);
   const newestAnswerRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -472,7 +518,11 @@ export default function App() {
   }
 
   function toggleListening() {
-    if (!SpeechRecognitionAPI || loading) return;
+    if (loading) return;
+    if (!SpeechRecognitionAPI) {
+      setVoiceMessage(VOICE_MESSAGES.unsupported);
+      return;
+    }
     if (listening) {
       recognitionRef.current?.stop();
       return;
@@ -489,9 +539,20 @@ export default function App() {
       }
       setInput(transcript.slice(0, MAX_QUESTION_CHARACTERS));
     };
-    recognition.onerror = () => setListening(false);
+    recognition.onerror = (event) => {
+      setListening(false);
+      if (event.error === "aborted") return;
+      setVoiceMessage(
+        event.error === "not-allowed" || event.error === "service-not-allowed"
+          ? VOICE_MESSAGES.blocked
+          : event.error === "no-speech"
+            ? VOICE_MESSAGES.noSpeech
+            : VOICE_MESSAGES.failed,
+      );
+    };
     recognition.onend = () => setListening(false);
     recognitionRef.current = recognition;
+    setVoiceMessage("");
     recognition.start();
     setListening(true);
   }
@@ -650,21 +711,18 @@ export default function App() {
               placeholder={placeholder}
               rows={2}
             />
-            {SpeechRecognitionAPI && (
-              <button
-                type="button"
-                className={
-                  listening ? "voice-button is-active" : "voice-button"
-                }
-                onClick={toggleListening}
-                disabled={loading}
-                aria-label={
-                  listening ? "Stop voice input" : "Speak your question"
-                }
-              >
-                {listening ? "Stop" : "Speak"}
-              </button>
-            )}
+            <button
+              type="button"
+              className={listening ? "voice-button is-active" : "voice-button"}
+              onClick={toggleListening}
+              disabled={loading}
+              aria-label={
+                listening ? "Stop voice input" : "Speak your question"
+              }
+              title={listening ? "Stop voice input" : "Speak your question"}
+            >
+              {listening ? <StopIcon /> : <MicIcon />}
+            </button>
             <button
               type="button"
               className="send-button"
@@ -675,6 +733,11 @@ export default function App() {
               Send
             </button>
           </div>
+          {voiceMessage && (
+            <p className="voice-message" role="status">
+              {voiceMessage}
+            </p>
+          )}
           <p className="character-count">
             {input.length} of {MAX_QUESTION_CHARACTERS} characters
           </p>

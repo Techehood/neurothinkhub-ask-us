@@ -243,4 +243,41 @@ describe("Ask NeuroThinkHub pilot UI", () => {
       screen.getByRole("textbox", { name: /your question/i }),
     ).toHaveFocus();
   });
+
+  test("shows the mic button with a message when the browser has no voice input", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(
+      screen.getByRole("button", { name: /speak your question/i }),
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Voice input works in Chrome and Edge",
+    );
+  });
+
+  test("explains when the microphone is blocked instead of failing silently", async () => {
+    const user = userEvent.setup();
+    class BlockedRecognition {
+      start() {
+        setTimeout(() => this.onerror({ error: "not-allowed" }), 0);
+      }
+      stop() {}
+    }
+    vi.stubGlobal("webkitSpeechRecognition", BlockedRecognition);
+    render(<App />);
+
+    await user.click(
+      screen.getByRole("button", { name: /speak your question/i }),
+    );
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "The microphone is blocked",
+    );
+    expect(
+      screen.getByRole("button", { name: /speak your question/i }),
+    ).toBeInTheDocument();
+    vi.unstubAllGlobals();
+  });
 });

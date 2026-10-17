@@ -407,6 +407,19 @@ h2 {
   background: #8f3d32;
 }
 
+.voice-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+}
+
+.voice-message {
+  margin: 6px 0 0;
+  color: #8f3d32;
+  font-size: 0.9rem;
+}
+
 .character-count {
   margin-top: 5px;
   color: #574f64;

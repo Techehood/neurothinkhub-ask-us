@@ -727,10 +727,14 @@ export default function App() {
           )}
 
           {messages.length === 0 && (
+            <p className="empty-state">
+              This space adapts to your pattern of need.
+            </p>
+          )}
+
+          {/* Only for a fully empty start, so they never push the input down. */}
+          {messages.length === 0 && !input.trim() && (
             <div className="starters">
-              <p className="empty-state">
-                This space adapts to your pattern of need.
-              </p>
               <p>Ask your own question now, or try one of these:</p>
               {STARTER_PROMPTS.map((prompt) => (
                 <button

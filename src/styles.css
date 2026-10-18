@@ -225,6 +225,9 @@ h2 {
 }
 
 .empty-state {
+  margin-bottom: 8px;
+  color: #574f64;
+  font-size: 0.9rem;
   font-weight: 650;
 }
 

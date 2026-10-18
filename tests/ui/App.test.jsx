@@ -454,4 +454,32 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     expect(confirm).not.toHaveBeenCalled();
     expect(screen.queryByText(/shaping responses for/i)).toBeNull();
   });
+  test("shows suggested questions only while the chat and input are both empty", async () => {
+    const user = userEvent.setup();
+    fetch.mockReturnValueOnce(jsonResponse({ reply: "Done.", answerId: "a" }));
+    render(<App />);
+    const starter = () =>
+      screen.queryByRole("button", {
+        name: "What could make it easier to start a difficult task?",
+      });
+    const question = screen.getByRole("textbox", { name: /your question/i });
+
+    expect(starter()).toBeVisible();
+    await user.type(question, "Hi");
+    expect(starter()).toBeNull();
+    await user.clear(question);
+    expect(starter()).toBeVisible();
+    await user.type(question, "Hi{Enter}");
+    await screen.findByText("Done.");
+    expect(starter()).toBeNull();
+  });
+
+  test("hides suggested questions when a pattern pre-fills the input", () => {
+    window.history.replaceState(null, "", "/?pattern=sensory");
+    render(<App />);
+    expect(screen.queryByText(/try one of these/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByText("This space adapts to your pattern of need."),
+    ).toBeVisible();
+  });
 });

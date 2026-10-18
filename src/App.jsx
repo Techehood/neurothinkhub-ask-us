@@ -108,7 +108,6 @@ const SIDE_ITEMS = {
   right: [
     { label: "Self-discovery" },
     { label: "Workplace tools" },
-    { label: "The Bridge" },
     { label: "Coaching" },
     { label: "Community" },
     { label: "Workshops" },

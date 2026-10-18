@@ -30,6 +30,18 @@ For an urgent hard stop, disable the deployment in Vercel after setting the swit
 
 ## Request controls
 
-The chat route applies a per-connection rate limit and a per-session request limit. These in-memory counters are best-effort within each serverless instance. A shared external rate-limit store is an outstanding production hardening item and must be approved before it is added.
+The chat route applies three limits, all held in Upstash Redis so they are shared across serverless instances and survive restarts:
+
+- **Per connection:** `RATE_LIMIT_REQUESTS` (default 15) per `RATE_LIMIT_WINDOW_MS` (default 1 hour).
+- **Per session:** `MAX_SESSION_REQUESTS` (default 10) per the same window.
+- **Daily ceiling across all visitors:** `DAILY_REQUEST_CEILING` (default 500), reset at midnight UTC. Once reached, every visitor sees the pilot-paused message until the reset. Only requests that pass the first two limits count towards it, so one noisy connection cannot use it up.
+
+If Redis is unreachable, the route falls back to best-effort per-instance counters and logs `Shared rate limits unavailable; using instance limits`.
+
+## Cost monitoring
+
+Each answered request writes one JSON line to the Vercel runtime logs: `{"event":"chat_usage","pattern":…,"session":…,"inputTokens":…,"outputTokens":…,"stopReason":…}`. Each refused request writes `{"event":"chat_limited","reason":"ip"|"session"|"daily"}`. The session value is a one-way hash. No question, history or answer text is ever logged. A `stopReason` of `max_tokens` means an answer was cut off by its token budget.
+
+The Anthropic console spend limit is the monthly backstop; the daily ceiling is the app-level one.
 
 No short inactivity timer is used. A session remains on screen until the visitor refreshes, closes the tab, or confirms Start Again.

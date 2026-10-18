@@ -536,4 +536,185 @@ describe("POST /api/chat", () => {
       /override the response and formatting requirements above wherever they conflict/,
     );
   });
+  test("logs one usage line per answer without any conversation text", async () => {
+    const providerFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        content: [{ type: "text", text: "Secret answer text" }],
+        usage: { input_tokens: 812, output_tokens: 96 },
+        stop_reason: "end_turn",
+      }),
+    });
+    vi.stubGlobal("fetch", providerFetch);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const handler = await loadHandler();
+
+    await call(handler, {
+      question: "My private question",
+      history: [{ role: "user", content: "Earlier private message" }],
+      sessionId: "session-usage-log-123456",
+      patternKey: "masking",
+    });
+
+    const lines = logSpy.mock.calls.map(([line]) => line);
+    expect(lines).toHaveLength(1);
+    expect(JSON.parse(lines[0])).toEqual({
+      event: "chat_usage",
+      pattern: "masking",
+      session: expect.stringMatching(/^[0-9a-f]{16}$/),
+      inputTokens: 812,
+      outputTokens: 96,
+      stopReason: "end_turn",
+    });
+    expect(lines[0]).not.toMatch(/private|Secret|session-usage-log/);
+  });
+
+  test("shows the paused message once the daily ceiling is reached", async () => {
+    process.env.DAILY_REQUEST_CEILING = "1";
+    const providerFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ content: [{ type: "text", text: "Answer" }] }),
+    });
+    vi.stubGlobal("fetch", providerFetch);
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const handler = await loadHandler();
+
+    const first = await call(handler, {
+      question: "First",
+      sessionId: "session-daily-first-1234",
+    });
+    const second = await call(handler, {
+      question: "Second",
+      sessionId: "session-daily-second-123",
+    });
+
+    expect(first.statusCode).toBe(200);
+    expect(second.statusCode).toBe(503);
+    expect(second.body.error).toContain("pilot is paused");
+    expect(providerFetch).toHaveBeenCalledTimes(1);
+  });
+
+  describe("with shared Redis limits", () => {
+    function fakeRedisAndProvider(store, { failRedis = false } = {}) {
+      return vi.fn(async (url, init) => {
+        if (String(url).endsWith("/pipeline")) {
+          if (failRedis) return { ok: false, json: async () => null };
+          const commands = JSON.parse(init.body);
+          return {
+            ok: true,
+            json: async () =>
+              commands.map(([command, key]) => {
+                if (command === "INCR") {
+                  store.set(key, (store.get(key) || 0) + 1);
+                  return { result: store.get(key) };
+                }
+                return { result: 1 };
+              }),
+          };
+        }
+        return {
+          ok: true,
+          json: async () => ({ content: [{ type: "text", text: "Answer" }] }),
+        };
+      });
+    }
+
+    beforeEach(() => {
+      process.env.UPSTASH_REDIS_REST_KV_REST_API_URL =
+        "https://redis.example.upstash.io";
+      process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN = "redis-test-token";
+      vi.spyOn(console, "log").mockImplementation(() => {});
+    });
+
+    test("keeps the IP limit across instance restarts and stores no raw IP", async () => {
+      process.env.RATE_LIMIT_REQUESTS = "1";
+      const store = new Map();
+      const fetchMock = fakeRedisAndProvider(store);
+      vi.stubGlobal("fetch", fetchMock);
+
+      const first = await call(await loadHandler(), {
+        question: "One",
+        sessionId: "session-redis-ip-first-1",
+      });
+      // A fresh module simulates Vercel recycling the instance.
+      const second = await call(await loadHandler(), {
+        question: "Two",
+        sessionId: "session-redis-ip-second1",
+      });
+
+      expect(first.statusCode).toBe(200);
+      expect(second.statusCode).toBe(429);
+      expect(second.body.error).toContain("Too many requests");
+      expect([...store.keys()].join(" ")).not.toContain("203.0.113.10");
+      expect([...store.keys()].join(" ")).not.toContain("session-redis");
+    });
+
+    test("counts the daily ceiling only for requests that pass per-visitor limits", async () => {
+      process.env.RATE_LIMIT_REQUESTS = "1";
+      const store = new Map();
+      vi.stubGlobal("fetch", fakeRedisAndProvider(store));
+      const handler = await loadHandler();
+
+      await call(handler, {
+        question: "One",
+        sessionId: "session-redis-daily-1-a",
+      });
+      await call(handler, {
+        question: "Two",
+        sessionId: "session-redis-daily-1-b",
+      });
+      await call(handler, {
+        question: "Six",
+        sessionId: "session-redis-daily-1-c",
+      });
+
+      const dailyKey = [...store.keys()].find((key) =>
+        key.startsWith("rl:daily:"),
+      );
+      expect(dailyKey).toBe(
+        `rl:daily:${new Date().toISOString().slice(0, 10)}`,
+      );
+      expect(store.get(dailyKey)).toBe(1);
+    });
+
+    test("pauses everyone once the shared daily ceiling is reached", async () => {
+      process.env.DAILY_REQUEST_CEILING = "2";
+      const store = new Map();
+      vi.stubGlobal("fetch", fakeRedisAndProvider(store));
+
+      const results = [];
+      for (const [ip, sessionId] of [
+        ["198.51.100.1", "session-redis-ceiling-a1"],
+        ["198.51.100.2", "session-redis-ceiling-b1"],
+        ["198.51.100.3", "session-redis-ceiling-c1"],
+      ]) {
+        results.push(
+          await call(
+            await loadHandler(),
+            { question: "Hi", sessionId },
+            { headers: { "x-forwarded-for": ip } },
+          ),
+        );
+      }
+
+      expect(results.map((res) => res.statusCode)).toEqual([200, 200, 503]);
+      expect(results[2].body.error).toContain("pilot is paused");
+    });
+
+    test("falls back to instance limits when Redis is unreachable", async () => {
+      const fetchMock = fakeRedisAndProvider(new Map(), { failRedis: true });
+      vi.stubGlobal("fetch", fetchMock);
+      vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const res = await call(await loadHandler(), {
+        question: "Still works?",
+        sessionId: "session-redis-down-12345",
+      });
+
+      expect(res.statusCode).toBe(200);
+      expect(console.error).toHaveBeenCalledWith(
+        "Shared rate limits unavailable; using instance limits",
+      );
+    });
+  });
 });

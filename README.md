@@ -43,6 +43,7 @@ Copy `.env.example` to a local `.env` only when developing locally. Never commit
 | `MAX_RESPONSE_CHARACTERS`              | No               | Server answer-size ceiling after provider response. Defaults to 5000; production uses 7000 for long pattern answers.  |
 | `MAX_RESPONSE_TOKENS`                  | No               | Ceiling on tokens requested from the model. Defaults to 400; production uses 1400 so the longest pattern answers fit. |
 | `MAX_SESSION_REQUESTS`                 | No               | Requests allowed for one pilot session in the rate window.                                                            |
+| `DAILY_REQUEST_CEILING`                | No               | Answered requests allowed per UTC day across all visitors before the pilot pauses. Defaults to 500.                   |
 | `RATE_LIMIT_REQUESTS`                  | No               | Requests allowed from one connection in the rate window.                                                              |
 | `RATE_LIMIT_WINDOW_MS`                 | No               | Length of the request-limit window.                                                                                   |
 | `PROVIDER_TIMEOUT_MS`                  | No               | Provider request timeout.                                                                                             |

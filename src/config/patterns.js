@@ -32,7 +32,7 @@ export const PATTERNS_CONFIG = Object.freeze({
     title: "The Executive Function Scaffolder",
     humanVoice: "“I know what I need to do, but I can’t organise the steps.”",
     seedPrompt:
-      "I need to complete [describe your task or project here], but the steps feel tangled. Help me organise a clear way forward.",
+      "I need to [describe your task]. The steps feel tangled. Help me organise a clear way forward.",
     editableHint:
       "Pattern of need active: Executive Function Scaffolder. Edit the bracketed text above before sending, or clear to start fresh.",
     systemGuardrail: `ACTIVE PATTERN OF NEED: The Executive Function Scaffolder (Core Driver: Clarity).
@@ -49,7 +49,7 @@ MANDATORY RESPONSE SHAPE:
     title: "The Sensory-Sensitive Worker",
     humanVoice: "“The environment already drains me.”",
     seedPrompt:
-      "My cognitive and sensory load is high right now, and I need a calm, low-demand way to handle [insert task or situation].",
+      "Everything feels like too much. Help me handle [insert task] without it getting worse.",
     editableHint:
       "Pattern of need active: Sensory-Sensitive Worker. Edit the bracketed text above before sending, or clear to start fresh.",
     systemGuardrail: `ACTIVE PATTERN OF NEED: The Sensory-Sensitive Worker (Core Driver: Safety).
@@ -66,7 +66,7 @@ MANDATORY RESPONSE SHAPE:
     title: "The Masking Professional",
     humanVoice: "“I don’t want people to know I’m struggling.”",
     seedPrompt:
-      "I want a private, non-judgmental space to draft a message about [insert workplace situation or boundary] without over-explaining.",
+      "I need to work out how to say [insert situation] without over-explaining.",
     editableHint:
       "Pattern of need active: Masking Professional. Edit the bracketed text above before sending, or clear to start fresh.",
     systemGuardrail: `ACTIVE PATTERN OF NEED: The Masking Professional (Core Driver: Safety).
@@ -84,7 +84,7 @@ MANDATORY RESPONSE SHAPE:
     title: "The Creative Translator",
     humanVoice: "“I can see the idea, but I need help expressing it.”",
     seedPrompt:
-      "Here are my rough thoughts: [paste or type your unedited thoughts here]. Help me shape this clearly while keeping my natural voice.",
+      "My thoughts are rough: [paste or type here]. Help me shape them without losing my voice.",
     editableHint:
       "Pattern of need active: Creative Translator. Replace the bracketed section with your rough thoughts, or clear to start fresh.",
     systemGuardrail: `ACTIVE PATTERN OF NEED: The Creative Translator (Core Driver: Agency).

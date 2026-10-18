@@ -352,7 +352,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
 
     const question = screen.getByRole("textbox", { name: /your question/i });
     expect(question).toHaveValue(
-      "Here are my rough thoughts: [paste or type your unedited thoughts here]. Help me shape this clearly while keeping my natural voice.",
+      "My thoughts are rough: [paste or type here]. Help me shape them without losing my voice.",
     );
     expect(question).toHaveClass("is-prefilled");
     expect(question).toHaveAccessibleDescription(/editable starter prompt/i);
@@ -376,12 +376,12 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     await user.click(
       screen.getByRole("button", { name: /sensory-sensitive/i }),
     );
-    expect(question.value).toMatch(/^My cognitive and sensory load/);
+    expect(question.value).toMatch(/^Everything feels like too much/);
 
     await user.click(
       screen.getByRole("button", { name: /masking professional/i }),
     );
-    expect(question.value).toMatch(/^I want a private/);
+    expect(question.value).toMatch(/^I need to work out how to say/);
 
     await user.clear(question);
     await user.type(question, "My own words");

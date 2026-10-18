@@ -149,3 +149,13 @@ neurothinkhub.com (WordPress)                 Vercel (this repo)
 | Cut 1-2-3 steps and preference dropdowns | A calm-first screen should teach itself. Restore in Phase 1.5 only with user-research evidence. Server support is kept, so restoring is UI-only.                      |
 | Keep the microphone in both modes        | Accessibility support for dyslexic visitors, visitors with motor-coordination differences, and anyone who thinks faster than they type.                               |
 | No analytics in the MVP                  | Keeps the privacy posture simple while the pilot runs. The only data collected is opt-in answer feedback (see [Privacy and data handling](PRIVACY-DATA-HANDLING.md)). |
+
+## 9. Phase 1.5 backlog
+
+| Item                                 | Why                                                                                                                                                                                                       |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tune "I am… Educator" guidance       | MVP testing was a soft pass: content was on-brand, but answers did not name EHCP, SENCO or UDL. Strengthen `PERSONA_GUIDANCE.educator` in `api/_lib/system-prompt.js`.                                    |
+| Watch for brand-rule over-correction | One answer advised the visitor to avoid "superpower" language in their own writing. If it recurs, add: "These language rules apply to your own wording. Do not correct how visitors describe themselves." |
+| Optional preferences and 1-2-3 steps | Removed for the calm-first MVP. Restore only with user-research evidence; the server still accepts `setting`, `supportFor` and `answerStyle`.                                                             |
+| Copy, download and share             | MVP copies the whole answer. Per-variant copy, `.txt`/`.md` download, native share and whole-conversation export are deferred.                                                                            |
+| `editableHint` per pattern           | Unused in the MVP UI, which shows one shared "Editable starter prompt" cue. Use it or remove it.                                                                                                          |

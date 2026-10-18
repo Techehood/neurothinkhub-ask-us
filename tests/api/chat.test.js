@@ -623,6 +623,7 @@ describe("POST /api/chat", () => {
       process.env.UPSTASH_REDIS_REST_KV_REST_API_URL =
         "https://redis.example.upstash.io";
       process.env.UPSTASH_REDIS_REST_KV_REST_API_TOKEN = "redis-test-token";
+      process.env.VERCEL_ENV = "preview";
       vi.spyOn(console, "log").mockImplementation(() => {});
     });
 
@@ -668,11 +669,9 @@ describe("POST /api/chat", () => {
         sessionId: "session-redis-daily-1-c",
       });
 
-      const dailyKey = [...store.keys()].find((key) =>
-        key.startsWith("rl:daily:"),
-      );
+      const dailyKey = [...store.keys()].find((key) => key.includes(":daily:"));
       expect(dailyKey).toBe(
-        `rl:daily:${new Date().toISOString().slice(0, 10)}`,
+        `rl:preview:daily:${new Date().toISOString().slice(0, 10)}`,
       );
       expect(store.get(dailyKey)).toBe(1);
     });

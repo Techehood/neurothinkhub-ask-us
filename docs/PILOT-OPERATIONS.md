@@ -36,7 +36,7 @@ The chat route applies three limits, all held in Upstash Redis so they are share
 - **Per session:** `MAX_SESSION_REQUESTS` (default 10) per the same window.
 - **Daily ceiling across all visitors:** `DAILY_REQUEST_CEILING` (default 500), reset at midnight UTC. Once reached, every visitor sees the pilot-paused message until the reset. Only requests that pass the first two limits count towards it, so one noisy connection cannot use it up.
 
-If Redis is unreachable, the route falls back to best-effort per-instance counters and logs `Shared rate limits unavailable; using instance limits`.
+Counters are kept separately per Vercel environment (`VERCEL_ENV`), so testing on Preview never uses up Production's ceiling. If Redis is unreachable, the route falls back to best-effort per-instance counters and logs `Shared rate limits unavailable; using instance limits`.
 
 ## Cost monitoring
 

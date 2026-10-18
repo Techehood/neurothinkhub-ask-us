@@ -67,10 +67,12 @@ function checkInMemory(limits, now) {
 }
 
 async function checkInRedis(redis, limits, now) {
+  // Preview and Production share one Redis, so keep their counters apart.
+  const prefix = `rl:${process.env.VERCEL_ENV || "local"}`;
   const window = Math.floor(now / limits.rateLimitWindowMs);
   const windowSeconds = Math.ceil(limits.rateLimitWindowMs / 1000);
-  const ipKey = `rl:ip:${anonymise(limits.ip)}:${window}`;
-  const sessionKey = `rl:session:${anonymise(limits.sessionId)}:${window}`;
+  const ipKey = `${prefix}:ip:${anonymise(limits.ip)}:${window}`;
+  const sessionKey = `${prefix}:session:${anonymise(limits.sessionId)}:${window}`;
 
   const [ipCount, , sessionCount] = await redisPipeline(redis, [
     ["INCR", ipKey],
@@ -87,7 +89,7 @@ async function checkInRedis(redis, limits, now) {
 
   // Counted only after the per-visitor limits pass, so one noisy connection
   // cannot use up the shared daily ceiling.
-  const dailyKey = `rl:daily:${utcDay(now)}`;
+  const dailyKey = `${prefix}:daily:${utcDay(now)}`;
   const [dailyCount] = await redisPipeline(redis, [
     ["INCR", dailyKey],
     ["EXPIRE", dailyKey, 2 * 24 * 60 * 60],

@@ -49,7 +49,7 @@ const PERSONA_GUIDANCE = {
     "The visitor is an ally or professional (GP, counsellor, social worker, trustee, journalist, researcher, or similar). They are not neurodivergent themselves in this context, nor are they a line manager, HR, parent, or classroom educator. Frame answers around how to support, signpost, or make decisions about neurodivergent people they encounter in their work. Prioritise lived-experience voice, co-design principles, and challenging common professional defaults (e.g. referral-as-answer, awareness-as-training). Reference UK context where relevant (NHS, charity sector, safeguarding). Avoid clinical framing even when the visitor is clinical.",
 };
 
-export const NEUROTHINKHUB_SYSTEM_PROMPT_VERSION = "pilot-1.4.1";
+export const NEUROTHINKHUB_SYSTEM_PROMPT_VERSION = "pilot-1.4.2";
 
 const NEUROTHINKHUB_SYSTEM_PROMPT = `You are Ask NeuroThinkHub, a pilot providing general guidance about neuroinclusion and practical support. You do not provide a diagnosis and you do not replace medical, legal, safeguarding or emergency support.
 
@@ -127,7 +127,9 @@ export function buildSystemPrompt(
     ? "An active pattern of need is set below. Its response shape and length override the default length limits, and override the response and formatting requirements above wherever they conflict (including the use of headings, steps and lists)."
     : context.answerStyle === "detailed-explanation"
       ? "A detailed explanation was requested. Use up to 350 words, divided into short sections."
-      : "Keep the answer concise: no more than 150 words and three short sections. The visitor can ask a follow-up question.";
+      : context.persona === "hr-ld"
+        ? "The visitor works in HR or L&D and needs room for the mandatory framing below. Use up to 250 words in no more than four short sections, and always finish your final sentence."
+        : "Keep the answer concise: no more than 150 words and three short sections. The visitor can ask a follow-up question.";
 
   return `${NEUROTHINKHUB_SYSTEM_PROMPT}
 

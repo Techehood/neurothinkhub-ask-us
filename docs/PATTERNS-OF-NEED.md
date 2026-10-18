@@ -69,13 +69,15 @@ The response token budget per pattern lives on the server in `PATTERN_RESPONSE_T
 
 Each budget is capped by `MAX_RESPONSE_TOKENS` (see section 6).
 
+Without a pattern, blank chat uses 400 tokens (headroom above its 150-word guidance, so answers are not cut mid-sentence), and the HR / L&D audience uses 500 with up to 250 words, because its Equality Act, Access to Work and Skill Declaration framing needs the room (`PERSONA_RESPONSE_TOKENS` in `api/chat.js`).
+
 ## 4. Adding a pattern (Phase 1.5)
 
 1. **Pick a key.** Use lower case with no spaces, for example `planner`.
 2. **Allowlist it.** Add the key to `ALLOWED_PATTERN_KEYS` and to the `PatternKey` JSDoc union in `src/config/patterns.js`.
 3. **Configure it.** Add an entry to `PATTERNS_CONFIG` with every field in section 3. `key` must equal the property name.
 4. **Write the guardrail.** Follow the existing shape: an `ACTIVE PATTERN OF NEED:` line, then `MANDATORY RESPONSE SHAPE:` as numbered rules, ending with the shared language rules.
-5. **Set a budget.** Add the key to `PATTERN_RESPONSE_TOKENS` in `api/chat.js`. Without it, the pattern falls back to the default style budget of 250 tokens, which may cut long shapes short.
+5. **Set a budget.** Add the key to `PATTERN_RESPONSE_TOKENS` in `api/chat.js`. Without it, the pattern falls back to the blank-chat budget of 400 tokens, which may cut long shapes short.
 6. **Check the ceiling.** If the new budget is above `MAX_RESPONSE_TOKENS`, raise that variable in Vercel too.
 7. **Test.** `npm run test:run` covers the allowlist, the schema and the bracketed placeholder automatically. Add a UI test if the pattern needs new behaviour.
 8. **Link it.** Add the new `?pattern=` link to the WordPress pattern matrix (outside this repo).
@@ -152,10 +154,11 @@ neurothinkhub.com (WordPress)                 Vercel (this repo)
 
 ## 9. Phase 1.5 backlog
 
-| Item                                 | Why                                                                                                                                                                                                       |
-| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tune "I am… Educator" guidance       | MVP testing was a soft pass: content was on-brand, but answers did not name EHCP, SENCO or UDL. Strengthen `PERSONA_GUIDANCE.educator` in `api/_lib/system-prompt.js`.                                    |
-| Watch for brand-rule over-correction | One answer advised the visitor to avoid "superpower" language in their own writing. If it recurs, add: "These language rules apply to your own wording. Do not correct how visitors describe themselves." |
-| Optional preferences and 1-2-3 steps | Removed for the calm-first MVP. Restore only with user-research evidence; the server still accepts `setting`, `supportFor` and `answerStyle`.                                                             |
-| Copy, download and share             | MVP copies the whole answer. Per-variant copy, `.txt`/`.md` download, native share and whole-conversation export are deferred.                                                                            |
-| `editableHint` per pattern           | Unused in the MVP UI, which shows one shared "Editable starter prompt" cue. Use it or remove it.                                                                                                          |
+| Item                                 | Why                                                                                                                                                                                                                             |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "I am…" example prompts              | The abstract Educator test was a soft pass (no EHCP, SENCO or UDL), but scenario-based questions surfaced UK SEND vocabulary naturally. Try scenario-based example prompts in the UI before tuning `PERSONA_GUIDANCE.educator`. |
+| Link answers to paired articles      | Let topic-adjacent answers point to the paired hub article. Links must come from a server-side pattern → article slug map, never from the model, which would invent plausible URLs.                                             |
+| Watch for brand-rule over-correction | One answer advised the visitor to avoid "superpower" language in their own writing. If it recurs, add: "These language rules apply to your own wording. Do not correct how visitors describe themselves."                       |
+| Optional preferences and 1-2-3 steps | Removed for the calm-first MVP. Restore only with user-research evidence; the server still accepts `setting`, `supportFor` and `answerStyle`.                                                                                   |
+| Copy, download and share             | MVP copies the whole answer. Per-variant copy, `.txt`/`.md` download, native share and whole-conversation export are deferred.                                                                                                  |
+| `editableHint` per pattern           | Unused in the MVP UI, which shows one shared "Editable starter prompt" cue. Use it or remove it.                                                                                                                                |

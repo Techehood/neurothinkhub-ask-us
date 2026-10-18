@@ -88,7 +88,7 @@ const PATTERN_RESPONSE_TOKENS = {
   sensory: 200,
   masking: 500,
   scaffolder: 600,
-  translator: 900,
+  translator: 1400,
 };
 
 function getResponseTokenBudget(answerStyle, configuredMaximum, patternKey) {

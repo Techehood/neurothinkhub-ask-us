@@ -422,7 +422,7 @@ describe("POST /api/chat", () => {
     expect(res.body.reply).toContain("nhs.uk");
   });
   test("applies a valid pattern of need after the base prompt with its own token budget", async () => {
-    process.env.MAX_RESPONSE_TOKENS = "1000";
+    process.env.MAX_RESPONSE_TOKENS = "1500";
     const providerFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ content: [{ type: "text", text: "Answer" }] }),
@@ -439,7 +439,7 @@ describe("POST /api/chat", () => {
 
     const providerRequest = JSON.parse(providerFetch.mock.calls[0][1].body);
     expect(res.body.activePatternKey).toBe("translator");
-    expect(providerRequest.max_tokens).toBe(900);
+    expect(providerRequest.max_tokens).toBe(1400);
     expect(providerRequest.system).toMatch(
       /Optional visitor context:[\s\S]*\n\nACTIVE PATTERN OF NEED: The Creative Translator/,
     );

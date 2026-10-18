@@ -60,12 +60,12 @@ Browser                              Server (api/chat.js)
 
 The response token budget per pattern lives on the server in `PATTERN_RESPONSE_TOKENS` (`api/chat.js`):
 
-| Pattern    | Budget | Why                                       |
-| ---------- | ------ | ----------------------------------------- |
-| sensory    | 200    | Enforces the under-100-words shape.       |
-| masking    | 500    | Two tone options.                         |
-| scaffolder | 600    | Starter action plus three stages.         |
-| translator | 900    | Three variants with "What changed" lines. |
+| Pattern    | Budget | Why                                                                                      |
+| ---------- | ------ | ---------------------------------------------------------------------------------------- |
+| sensory    | 200    | Enforces the under-100-words shape.                                                      |
+| masking    | 500    | Two tone options.                                                                        |
+| scaffolder | 600    | Starter action plus three stages.                                                        |
+| translator | 1400   | Three variants of the visitor's text with "What changed" lines; grows with input length. |
 
 Each budget is capped by `MAX_RESPONSE_TOKENS` (see section 6).
 
@@ -102,10 +102,11 @@ The server still accepts `setting`, `supportFor` and `answerStyle` in `context`,
 
 ## 6. `MAX_RESPONSE_TOKENS`
 
-- **Current production value:** `900`, set in Vercel → Project → Settings → Environment Variables (Preview and Production).
+- **Current value:** `1400`, set in Vercel → Project → Settings → Environment Variables (Production, Preview and Development).
 - **Code default:** `400` if the variable is unset (`api/_lib/pilot-config.js`).
-- **Why 900:** it is the largest pattern budget (translator). Every request is capped at `min(MAX_RESPONSE_TOKENS, budget)`, so this value is a cost ceiling, not a target.
+- **Why 1400:** it is the largest pattern budget (translator). Preview testing at 400 cut the third variant off; long pasted input can need 1,200–1,400 tokens. Every request is capped at `min(MAX_RESPONSE_TOKENS, budget)`, so this value is a cost ceiling, not a target.
 - **Side effect:** the built-in answer-style budgets (220–500) are also capped by it, so raising it never lifts them above their own limits.
+- **Pair it with `MAX_RESPONSE_CHARACTERS`:** the server also trims answers by length (default 5,000 characters). A 1,400-token answer is about 5,600 characters, so this is set to `7000` in Vercel.
 - **To change it:** edit the variable in Vercel, then redeploy. New values only apply to new deployments.
 
 ## 7. Cross-origin architecture

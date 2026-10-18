@@ -12,7 +12,9 @@ The application asks for a question plus three optional context choices. It does
 | Question, recent history and optional choices | Generate the requested answer                      | Sent directly from the server route to Anthropic | Governed by NeuroThinkHub’s Anthropic account terms and data-processing agreement | Use the account/provider deletion process defined in that agreement |
 | Server application copy of raw chat           | Not required                                       | Not created by this application                  | None                                                                              | Not applicable                                                      |
 
-The route sends at most the eight most recent valid messages plus the current question. It sets `Cache-Control: no-store` and does not log request or response content.
+The route sends at most the eight most recent valid messages plus the current question. It sets `Cache-Control: no-store` and does not log request or response content. Runtime logs record only token counts, the pattern key, the stop reason and a one-way hash of the session identifier.
+
+Rate limiting stores short-lived counters in Upstash Redis, keyed by one-way hashes of the connection IP address and session identifier, never the raw values. Per-visitor counters expire after the rate window (one hour by default); the daily counter holds no visitor data and expires after two days.
 
 ## Feedback data
 

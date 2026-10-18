@@ -1,10 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { getPilotConfig } from "./_lib/pilot-config.js";
 import { buildSystemPrompt } from "./_lib/system-prompt.js";
-import { checkRequestLimits } from "./_lib/rate-limit.js";
+import { anonymise, checkRequestLimits } from "./_lib/rate-limit.js";
 import { resolvePattern } from "../src/config/patterns.js";
 
 const MODEL = "claude-haiku-4-5-20251001";
+const PAUSED_MESSAGE =
+  "The Ask NeuroThinkHub pilot is paused. Please use the support links on NeuroThinkHub.";
 const CONTEXT_VALUES = {
   // persona is a first-class routing field — do not strip
   persona: [
@@ -120,10 +122,7 @@ export default async function handler(req, res) {
 
   const config = getPilotConfig();
   if (!config.pilotEnabled) {
-    return res.status(503).json({
-      error:
-        "The Ask NeuroThinkHub pilot is paused. Please use the support links on NeuroThinkHub.",
-    });
+    return res.status(503).json({ error: PAUSED_MESSAGE });
   }
 
   const question =
@@ -144,14 +143,22 @@ export default async function handler(req, res) {
       .json({ error: "Please refresh the page and try again." });
   }
 
-  const limit = checkRequestLimits({
+  const limit = await checkRequestLimits({
     ip: getClientIp(req),
     sessionId,
     rateLimitRequests: config.rateLimitRequests,
     rateLimitWindowMs: config.rateLimitWindowMs,
     maxSessionRequests: config.maxSessionRequests,
+    dailyRequestCeiling: config.dailyRequestCeiling,
   });
-  if (!limit.allowed) return res.status(429).json({ error: limit.message });
+  if (!limit.allowed) {
+    console.log(
+      JSON.stringify({ event: "chat_limited", reason: limit.reason }),
+    );
+    if (limit.reason === "daily")
+      return res.status(503).json({ error: PAUSED_MESSAGE });
+    return res.status(429).json({ error: limit.message });
+  }
 
   if (!process.env.ANTHROPIC_API_KEY) {
     console.error(
@@ -208,6 +215,17 @@ export default async function handler(req, res) {
     }
 
     const data = await response.json();
+    // Usage only: never log question, history or reply text.
+    console.log(
+      JSON.stringify({
+        event: "chat_usage",
+        pattern: pattern?.key ?? null,
+        session: anonymise(sessionId),
+        inputTokens: data.usage?.input_tokens ?? null,
+        outputTokens: data.usage?.output_tokens ?? null,
+        stopReason: data.stop_reason ?? null,
+      }),
+    );
     const reply = limitAndFilterReply(data.content?.[0]?.text, config);
     return res.status(200).json({
       reply,

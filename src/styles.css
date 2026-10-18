@@ -249,6 +249,31 @@ h2 {
   white-space: normal;
 }
 
+.copy-button {
+  float: right;
+  min-height: 32px;
+  margin: -4px -6px 4px 12px;
+  padding: 4px 8px;
+  color: #594a66;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.copy-button:hover {
+  background: #ece3ef;
+}
+
+/* Keep the answer's first line level with the floated Copy button. */
+.copy-button + .sr-only + * {
+  margin-top: 0;
+}
+
 .assistant-message > :first-child {
   margin-top: 0;
 }

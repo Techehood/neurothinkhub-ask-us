@@ -289,6 +289,64 @@ function AnswerContent({ content }) {
   return <>{blocks}</>;
 }
 
+// Inside a cross-origin iframe the async Clipboard API needs the parent to
+// grant clipboard-write, so fall back to the older selection-based copy.
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const field = document.createElement("textarea");
+    field.value = text;
+    field.setAttribute("readonly", "");
+    field.style.position = "fixed";
+    field.style.opacity = "0";
+    document.body.appendChild(field);
+    field.select();
+    try {
+      return document.execCommand("copy");
+    } catch {
+      return false;
+    } finally {
+      field.remove();
+    }
+  }
+}
+
+function CopyButton({ text }) {
+  const [status, setStatus] = useState("idle");
+  const timerRef = useRef(null);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  async function handleCopy() {
+    const copied = await copyText(text);
+    setStatus(copied ? "copied" : "failed");
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setStatus("idle"), 2000);
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className="copy-button"
+        onClick={handleCopy}
+        aria-label="Copy response to clipboard"
+      >
+        {status === "copied" ? "Copied ✓" : "Copy"}
+      </button>
+      <span className="sr-only" aria-live="polite">
+        {status === "copied"
+          ? "Response copied."
+          : status === "failed"
+            ? "Could not copy. Please select the text instead."
+            : ""}
+      </span>
+    </>
+  );
+}
+
 function FeedbackControls({ message, conversation }) {
   const [status, setStatus] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
@@ -678,6 +736,7 @@ export default function App() {
                 ref={isNewestAnswer ? newestAnswerRef : null}
               >
                 <div className="message assistant-message">
+                  <CopyButton text={message.content} />
                   <AnswerContent content={message.content} />
                 </div>
                 <FeedbackControls

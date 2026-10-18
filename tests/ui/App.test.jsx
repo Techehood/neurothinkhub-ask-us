@@ -501,4 +501,56 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     expect(request.context).toEqual({});
     expect(request.patternKey).toBe("sensory");
   });
+  test("copies the full answer and confirms for two seconds", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const reply = "Variant 1: Lightly structured\nWhat changed: shorter lines.";
+    fetch.mockReturnValueOnce(jsonResponse({ reply, answerId: "a" }));
+    render(<App />);
+
+    await user.type(
+      screen.getByRole("textbox", { name: /your question/i }),
+      "Shape this{Enter}",
+    );
+    const copy = await screen.findByRole("button", {
+      name: "Copy response to clipboard",
+    });
+    expect(copy).toHaveTextContent("Copy");
+
+    await user.click(copy);
+    expect(await navigator.clipboard.readText()).toBe(reply);
+    expect(copy).toHaveTextContent("Copied ✓");
+    expect(screen.getByText("Response copied.")).toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(copy).toHaveTextContent(/^Copy$/);
+    vi.useRealTimers();
+  });
+
+  test("falls back to selection copy when the Clipboard API is blocked", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(navigator.clipboard, "writeText").mockRejectedValue(
+      new Error("blocked in iframe"),
+    );
+    document.execCommand = vi.fn(() => true);
+    fetch.mockReturnValueOnce(
+      jsonResponse({ reply: "Option A.", answerId: "a" }),
+    );
+    render(<App />);
+
+    await user.type(
+      screen.getByRole("textbox", { name: /your question/i }),
+      "Draft{Enter}",
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Copy response to clipboard" }),
+    );
+
+    expect(document.execCommand).toHaveBeenCalledWith("copy");
+    expect(
+      screen.getByRole("button", { name: "Copy response to clipboard" }),
+    ).toHaveTextContent("Copied ✓");
+  });
 });

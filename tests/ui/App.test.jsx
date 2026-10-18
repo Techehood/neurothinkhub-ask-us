@@ -73,7 +73,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
       screen.getByRole("textbox", { name: /your question/i }),
       "How can instructions be clearer?",
     );
-    await user.click(screen.getByRole("button", { name: /^send question$/i }));
+    await user.click(screen.getByRole("button", { name: /^send message$/i }));
 
     await screen.findByText("Try this.");
     const request = JSON.parse(fetch.mock.calls[0][1].body);
@@ -110,7 +110,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
       screen.getByRole("textbox", { name: /your question/i }),
     ).toHaveAttribute("maxlength", "1500");
     expect(
-      screen.getByRole("button", { name: /^send question$/i }),
+      screen.getByRole("button", { name: /^send message$/i }),
     ).toBeDisabled();
 
     await user.type(
@@ -119,7 +119,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     );
     await user.keyboard("{Enter}");
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Preparing your answer",
+      "Preparing a calm, structured response",
     );
 
     await act(async () => {
@@ -138,7 +138,9 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     expect(
       screen.getByText("Answer ready.", { selector: '[aria-live="polite"]' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /start again/i })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: /start a blank conversation/i }),
+    ).toBeEnabled();
   });
 
   test("renders response formatting without exposing Markdown symbols", async () => {
@@ -219,7 +221,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     );
   });
 
-  test("requires explicit confirmation before Start Again removes the conversation", async () => {
+  test("requires explicit confirmation before Start a blank conversation removes the conversation", async () => {
     const user = userEvent.setup();
     fetch.mockReturnValueOnce(
       jsonResponse({ reply: "One answer.", answerId: "ans_4" }),
@@ -232,13 +234,17 @@ describe("Ask NeuroThinkHub pilot UI", () => {
       "My question{Enter}",
     );
     await screen.findByText("One answer.");
-    await user.click(screen.getByRole("button", { name: /start again/i }));
+    await user.click(
+      screen.getByRole("button", { name: /start a blank conversation/i }),
+    );
     expect(screen.getByText("One answer.")).toBeVisible();
     expect(confirm).toHaveBeenCalledWith(
-      "Start again and remove this conversation from the screen?",
+      "Clear this conversation and start fresh? Your current chat will be lost.",
     );
 
-    await user.click(screen.getByRole("button", { name: /start again/i }));
+    await user.click(
+      screen.getByRole("button", { name: /start a blank conversation/i }),
+    );
     expect(screen.queryByText("One answer.")).not.toBeInTheDocument();
     expect(
       screen.getByRole("textbox", { name: /your question/i }),
@@ -338,5 +344,114 @@ describe("Ask NeuroThinkHub pilot UI", () => {
         selector: ".user-message",
       }),
     ).toHaveLength(0);
+  });
+  test("pre-fills the seed prompt from ?pattern= with an editable cue that clears on typing", async () => {
+    window.history.replaceState(null, "", "/?pattern=translator");
+    const user = userEvent.setup();
+    render(<App />);
+
+    const question = screen.getByRole("textbox", { name: /your question/i });
+    expect(question).toHaveValue(
+      "Here are my rough thoughts: [paste or type your unedited thoughts here]. Help me shape this clearly while keeping my natural voice.",
+    );
+    expect(question).toHaveClass("is-prefilled");
+    expect(question).toHaveAccessibleDescription(/editable starter prompt/i);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      /shaping responses for: the creative translator/i,
+    );
+    expect(
+      screen.getByRole("button", { name: /the creative translator/i }),
+    ).toHaveAttribute("aria-pressed", "true");
+
+    await user.type(question, "!");
+    expect(question).not.toHaveClass("is-prefilled");
+    expect(screen.queryByText(/editable starter prompt/i)).toBeNull();
+  });
+
+  test("selecting a pattern pill swaps an untouched seed but never overwrites the visitor's own text", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const question = screen.getByRole("textbox", { name: /your question/i });
+
+    await user.click(
+      screen.getByRole("button", { name: /sensory-sensitive/i }),
+    );
+    expect(question.value).toMatch(/^My cognitive and sensory load/);
+
+    await user.click(
+      screen.getByRole("button", { name: /masking professional/i }),
+    );
+    expect(question.value).toMatch(/^I want a private/);
+
+    await user.clear(question);
+    await user.type(question, "My own words");
+    await user.click(screen.getByRole("button", { name: /scaffolder/i }));
+    expect(question).toHaveValue("My own words");
+    expect(screen.getByRole("button", { name: /scaffolder/i })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  test("Switch to blank chat clears the pattern but keeps the conversation", async () => {
+    window.history.replaceState(null, "", "/?pattern=masking");
+    const user = userEvent.setup();
+    fetch
+      .mockReturnValueOnce(jsonResponse({ reply: "Option A.", answerId: "a1" }))
+      .mockReturnValueOnce(jsonResponse({ reply: "Plain.", answerId: "a2" }));
+    render(<App />);
+    const question = screen.getByRole("textbox", { name: /your question/i });
+
+    await user.click(screen.getByRole("button", { name: /send message/i }));
+    await screen.findByText("Option A.");
+    await user.click(
+      screen.getByRole("button", { name: /switch to blank chat/i }),
+    );
+
+    expect(screen.getByText("Option A.")).toBeVisible();
+    expect(screen.queryByText(/shaping responses for/i)).toBeNull();
+    expect(question).toHaveFocus();
+
+    await user.type(question, "Follow-up{Enter}");
+    await screen.findByText("Plain.");
+    expect(JSON.parse(fetch.mock.calls[0][1].body).patternKey).toBe("masking");
+    expect(JSON.parse(fetch.mock.calls[1][1].body)).not.toHaveProperty(
+      "patternKey",
+    );
+  });
+
+  test("Start a blank conversation clears the pattern and conversation, asking first only when there is a chat", async () => {
+    window.history.replaceState(null, "", "/?pattern=scaffolder");
+    const user = userEvent.setup();
+    fetch.mockReturnValueOnce(
+      jsonResponse({ reply: "Stage 1.", answerId: "a" }),
+    );
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: /send message/i }));
+    await screen.findByText("Stage 1.");
+    await user.click(
+      screen.getByRole("button", { name: /start a blank conversation/i }),
+    );
+
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Stage 1.")).toBeNull();
+    expect(screen.queryByText(/shaping responses for/i)).toBeNull();
+    expect(screen.getByRole("textbox", { name: /your question/i })).toHaveValue(
+      "",
+    );
+    expect(
+      screen.queryByRole("button", { name: /start a blank conversation/i }),
+    ).toBeNull();
+
+    confirm.mockClear();
+    await user.click(
+      screen.getByRole("button", { name: /sensory-sensitive/i }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: /start a blank conversation/i }),
+    );
+    expect(confirm).not.toHaveBeenCalled();
+    expect(screen.queryByText(/shaping responses for/i)).toBeNull();
   });
 });

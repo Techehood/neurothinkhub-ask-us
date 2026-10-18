@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { resolvePattern } from "./config/patterns.js";
+import { PATTERNS_CONFIG, resolvePattern } from "./config/patterns.js";
 import "./styles.css";
 
 const MAX_QUESTION_CHARACTERS = 1500;
@@ -126,6 +126,33 @@ function readPatternFromUrl() {
   } catch {
     return null;
   }
+}
+
+function PatternPills({ activePattern, onSelect }) {
+  return (
+    <div
+      className="pattern-pills"
+      role="group"
+      aria-label="Shape responses to a pattern of need"
+    >
+      {Object.keys(PATTERNS_CONFIG).map((key) => {
+        const pattern = PATTERNS_CONFIG[key];
+        const isActive = activePattern?.key === key;
+        return (
+          <button
+            key={key}
+            type="button"
+            aria-pressed={isActive}
+            onClick={() => onSelect(key)}
+            className={isActive ? "pattern-pill is-active" : "pattern-pill"}
+          >
+            <span className="pattern-pill-driver">{pattern.driver}:</span>{" "}
+            {pattern.title}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 function createSessionId() {
@@ -444,13 +471,14 @@ export default function App() {
   const [persona, setPersona] = useState("");
   const [context, setContext] = useState({});
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+  const [activePattern, setActivePattern] = useState(readPatternFromUrl);
+  const [input, setInput] = useState(() => activePattern?.seedPrompt ?? "");
+  const [isPreFilled, setIsPreFilled] = useState(() => Boolean(activePattern));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [announcement, setAnnouncement] = useState("");
   const [listening, setListening] = useState(false);
   const [voiceMessage, setVoiceMessage] = useState("");
-  const [activePattern] = useState(readPatternFromUrl);
   const inputRef = useRef(null);
   const newestAnswerRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -483,6 +511,7 @@ export default function App() {
     const history = messages.map(({ role, content }) => ({ role, content }));
     setMessages((current) => [...current, { role: "user", content: question }]);
     setInput("");
+    setIsPreFilled(false);
     setLoading(true);
     setError("");
     setAnnouncement("");
@@ -558,6 +587,7 @@ export default function App() {
         transcript += event.results[index][0].transcript;
       }
       setInput(transcript.slice(0, MAX_QUESTION_CHARACTERS));
+      setIsPreFilled(false);
     };
     recognition.onerror = (event) => {
       setListening(false);
@@ -577,13 +607,38 @@ export default function App() {
     setListening(true);
   }
 
+  function handlePatternSelect(key) {
+    const matched = resolvePattern(key);
+    if (!matched) return;
+    setActivePattern(matched);
+    // Only replace the input if it holds nothing the visitor wrote.
+    if (!input.trim() || isPreFilled) {
+      setInput(matched.seedPrompt);
+      setIsPreFilled(true);
+    }
+  }
+
+  // Shared by the banner dismiss and "Start a blank conversation".
+  function clearPattern() {
+    setActivePattern(null);
+    if (isPreFilled) setInput("");
+    setIsPreFilled(false);
+  }
+
+  function handleClearPattern() {
+    clearPattern();
+    inputRef.current?.focus();
+  }
+
   function startAgain() {
     if (
+      messages.length > 0 &&
       !window.confirm(
-        "Start again and remove this conversation from the screen?",
+        "Clear this conversation and start fresh? Your current chat will be lost.",
       )
     )
       return;
+    clearPattern();
     setMessages([]);
     setInput("");
     setError("");
@@ -615,13 +670,13 @@ export default function App() {
             <div>
               <h1>Ask NeuroThinkHub</h1>
             </div>
-            {messages.length > 0 && (
+            {(messages.length > 0 || activePattern) && (
               <button
                 type="button"
                 className="secondary-button"
                 onClick={startAgain}
               >
-                Start Again
+                Start a blank conversation
               </button>
             )}
           </div>
@@ -641,6 +696,10 @@ export default function App() {
             Protect your privacy: do not submit names, addresses, medical
             records or confidential workplace information.
           </p>
+          <PatternPills
+            activePattern={activePattern}
+            onSelect={handlePatternSelect}
+          />
         </header>
 
         <PersonaSelector persona={persona} onChange={setPersona} />
@@ -650,8 +709,28 @@ export default function App() {
         <ContextChoices context={context} onChange={setContext} />
 
         <section className="conversation" aria-label="Conversation">
+          {activePattern && (
+            <div className="active-pattern-banner" role="status">
+              <span>
+                Shaping responses for: <strong>{activePattern.title}</strong>
+                {" — "}
+                <em>{activePattern.humanVoice}</em>
+              </span>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={handleClearPattern}
+              >
+                Switch to blank chat
+              </button>
+            </div>
+          )}
+
           {messages.length === 0 && (
             <div className="starters">
+              <p className="empty-state">
+                This space adapts to your pattern of need.
+              </p>
               <p>Ask your own question now, or try one of these:</p>
               {STARTER_PROMPTS.map((prompt) => (
                 <button
@@ -704,7 +783,7 @@ export default function App() {
 
           {loading && (
             <p className="loading-status" role="status">
-              Preparing your answer…
+              Preparing a calm, structured response…
             </p>
           )}
           {error && (
@@ -719,12 +798,25 @@ export default function App() {
 
         <div className="composer">
           <label htmlFor="question">Your question</label>
+          {isPreFilled && activePattern && (
+            <p className="editable-cue" id="editable-cue">
+              Editable starter prompt — change the bracketed text or rewrite
+              freely
+            </p>
+          )}
           <div className="composer-row">
             <textarea
               id="question"
               ref={inputRef}
+              className={isPreFilled ? "is-prefilled" : undefined}
+              aria-describedby={
+                isPreFilled && activePattern ? "editable-cue" : undefined
+              }
               value={input}
-              onChange={(event) => setInput(event.target.value)}
+              onChange={(event) => {
+                setInput(event.target.value);
+                if (isPreFilled) setIsPreFilled(false);
+              }}
               onKeyDown={handleKeyDown}
               disabled={loading}
               maxLength={MAX_QUESTION_CHARACTERS}
@@ -748,9 +840,8 @@ export default function App() {
               className="send-button"
               onClick={() => sendMessage()}
               disabled={loading || !input.trim()}
-              aria-label="Send question"
             >
-              Send
+              {loading ? "Working…" : "Send message"}
             </button>
           </div>
           {voiceMessage && (

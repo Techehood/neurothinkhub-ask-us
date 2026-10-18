@@ -181,6 +181,59 @@ h2 {
   border-radius: 8px;
 }
 
+.pattern-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.pattern-pill {
+  padding: 7px 12px;
+  text-align: left;
+  color: #302b3a;
+  background: #fff;
+  border: 1px solid #766a80;
+  border-radius: 999px;
+  font-size: 0.86rem;
+}
+
+.pattern-pill.is-active {
+  color: #fff;
+  background: #594a66;
+  border-color: #594a66;
+}
+
+.pattern-pill-driver {
+  font-weight: 700;
+}
+
+.active-pattern-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  color: #30253a;
+  background: #f4eaf8;
+  border-left: 5px solid #594a66;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.empty-state {
+  font-weight: 650;
+}
+
+.editable-cue {
+  margin: 0 0 6px;
+  color: #574f64;
+  font-size: 0.82rem;
+}
+
 .conversation {
   flex: 1;
   overflow-y: auto;
@@ -381,6 +434,10 @@ h2 {
   color: #1c2436;
   border: 1px solid #766a80;
   border-radius: 9px;
+}
+
+.composer textarea.is-prefilled {
+  border: 2px dashed #594a66;
 }
 
 .send-button,

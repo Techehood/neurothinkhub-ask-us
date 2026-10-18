@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { resolvePattern } from "./config/patterns.js";
 import "./styles.css";
 
 const MAX_QUESTION_CHARACTERS = 1500;
@@ -113,6 +114,19 @@ const SIDE_ITEMS = {
     { label: "Workshops" },
   ],
 };
+
+const DRAFT_KEPT_MESSAGE =
+  "Your draft is still in the text box below so you will not lose your thoughts.";
+
+function readPatternFromUrl() {
+  try {
+    return resolvePattern(
+      new URLSearchParams(window.location.search).get("pattern"),
+    );
+  } catch {
+    return null;
+  }
+}
 
 function createSessionId() {
   if (globalThis.crypto?.randomUUID)
@@ -436,6 +450,7 @@ export default function App() {
   const [announcement, setAnnouncement] = useState("");
   const [listening, setListening] = useState(false);
   const [voiceMessage, setVoiceMessage] = useState("");
+  const [activePattern] = useState(readPatternFromUrl);
   const inputRef = useRef(null);
   const newestAnswerRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -486,6 +501,7 @@ export default function App() {
           history,
           context: mergedContext,
           sessionId: sessionIdRef.current,
+          ...(activePattern ? { patternKey: activePattern.key } : {}),
         }),
       });
       const data = await response.json();
@@ -499,9 +515,14 @@ export default function App() {
         { role: "assistant", content: data.reply, answerId: data.answerId },
       ]);
     } catch (requestError) {
+      // Put the question back so the draft-kept message stays true.
+      setMessages((current) => current.slice(0, -1));
+      setInput(question);
       setError(
-        requestError.message ||
-          "Could not reach Ask NeuroThinkHub. Please check your connection and try again.",
+        `${
+          requestError.message ||
+          "Could not reach Ask NeuroThinkHub. Please check your connection and try again."
+        } ${DRAFT_KEPT_MESSAGE}`,
       );
       setAnnouncement("The answer could not be prepared.");
     } finally {

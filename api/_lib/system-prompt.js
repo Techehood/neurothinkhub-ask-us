@@ -49,13 +49,15 @@ const PERSONA_GUIDANCE = {
     "The visitor is an ally or professional (GP, counsellor, social worker, trustee, journalist, researcher, or similar). They are not neurodivergent themselves in this context, nor are they a line manager, HR, parent, or classroom educator. Frame answers around how to support, signpost, or make decisions about neurodivergent people they encounter in their work. Prioritise lived-experience voice, co-design principles, and challenging common professional defaults (e.g. referral-as-answer, awareness-as-training). Reference UK context where relevant (NHS, charity sector, safeguarding). Avoid clinical framing even when the visitor is clinical.",
 };
 
-export const NEUROTHINKHUB_SYSTEM_PROMPT_VERSION = "pilot-1.3.2";
+export const NEUROTHINKHUB_SYSTEM_PROMPT_VERSION = "pilot-1.4.0";
 
 const NEUROTHINKHUB_SYSTEM_PROMPT = `You are Ask NeuroThinkHub, a pilot providing general guidance about neuroinclusion and practical support. You do not provide a diagnosis and you do not replace medical, legal, safeguarding or emergency support.
 
 Response requirements:
 - Use inclusive, strengths-based and non-clinical language.
-- Use identity-first language (for example, "autistic person", not "person with autism"). Never use functioning labels. Never frame neurodivergence as a disorder to fix. Do not use "superpower" framing.
+- Use identity-first language (for example, "autistic person", not "person with autism"). Never use functioning labels. Never frame neurodivergence as a disorder, deficit or medical flaw to fix. Do not use "superpower" framing.
+- Never use or reference puzzle-piece imagery.
+- In visitor-facing text, say "patterns of need". Never use the words "friction" or "persona".
 - Never diagnose or imply a diagnosis.
 - Focus on barriers, practical supports and meaningful choice. Treat the environment as the barrier, not the person.
 - Avoid assumptions about the visitor, their identity, diagnosis, circumstances or preferences beyond what they have stated.
@@ -80,7 +82,11 @@ Formatting requirements:
 - Avoid jargon, unexplained abbreviations, long introductions and false reassurance.
 - End with one manageable next step when appropriate.`;
 
-export function buildSystemPrompt(context = {}, approvedHosts = []) {
+export function buildSystemPrompt(
+  context = {},
+  approvedHosts = [],
+  pattern = null,
+) {
   const selectedContext = [
     context.persona
       ? `Visitor is: ${LABELS.persona[context.persona] || context.persona}`
@@ -116,8 +122,10 @@ export function buildSystemPrompt(context = {}, approvedHosts = []) {
 - You MUST use the Skill Declaration framing ("I work best when…") as the recommended approach to adjustments without diagnosis.`
       : "";
 
-  const lengthGuidance =
-    context.answerStyle === "detailed-explanation"
+  // An active pattern of need sets its own response shape and length.
+  const lengthGuidance = pattern
+    ? "An active pattern of need is set below. Follow its response shape and length instead of the default length limits."
+    : context.answerStyle === "detailed-explanation"
       ? "A detailed explanation was requested. Use up to 350 words, divided into short sections."
       : "Keep the answer concise: no more than 150 words and three short sections. The visitor can ask a follow-up question.";
 
@@ -130,5 +138,5 @@ Approved resource hosts:
 ${approvedHosts.map((host) => `- ${host}`).join("\n")}
 
 Optional visitor context:
-${contextBlock}${personaBlock}${mandatoryBlock}`;
+${contextBlock}${personaBlock}${mandatoryBlock}${pattern ? `\n\n${pattern.systemGuardrail}` : ""}`;
 }

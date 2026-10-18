@@ -14,6 +14,7 @@ beforeEach(() => {
     vi.fn(() => true),
   );
   Element.prototype.scrollIntoView = vi.fn();
+  window.history.replaceState(null, "", "/");
 });
 
 describe("Ask NeuroThinkHub pilot UI", () => {
@@ -279,5 +280,63 @@ describe("Ask NeuroThinkHub pilot UI", () => {
       screen.getByRole("button", { name: /speak your question/i }),
     ).toBeInTheDocument();
     vi.unstubAllGlobals();
+  });
+  test("sends a valid ?pattern= key with each question", async () => {
+    window.history.replaceState(null, "", "/?pattern=Sensory");
+    const user = userEvent.setup();
+    fetch
+      .mockReturnValueOnce(jsonResponse({ reply: "First.", answerId: "a1" }))
+      .mockReturnValueOnce(jsonResponse({ reply: "Second.", answerId: "a2" }));
+    render(<App />);
+
+    const question = screen.getByRole("textbox", { name: /your question/i });
+    await user.type(question, "One{Enter}");
+    await screen.findByText("First.");
+    await user.type(question, "Two{Enter}");
+    await screen.findByText("Second.");
+
+    expect(JSON.parse(fetch.mock.calls[0][1].body).patternKey).toBe("sensory");
+    expect(JSON.parse(fetch.mock.calls[1][1].body).patternKey).toBe("sensory");
+  });
+
+  test.each(["/", "/?pattern=unknown", "/?pattern=", "/?pattern=a&pattern=b"])(
+    "sends no pattern key for %s",
+    async (url) => {
+      window.history.replaceState(null, "", url);
+      const user = userEvent.setup();
+      fetch.mockReturnValueOnce(jsonResponse({ reply: "Ok.", answerId: "a" }));
+      render(<App />);
+
+      await user.type(
+        screen.getByRole("textbox", { name: /your question/i }),
+        "Hello{Enter}",
+      );
+      await screen.findByText("Ok.");
+
+      expect(JSON.parse(fetch.mock.calls[0][1].body)).not.toHaveProperty(
+        "patternKey",
+      );
+    },
+  );
+
+  test("keeps the draft in the text box when a request fails", async () => {
+    const user = userEvent.setup();
+    fetch.mockReturnValueOnce(
+      jsonResponse({ error: "Temporarily unavailable." }, false),
+    );
+    render(<App />);
+
+    const question = screen.getByRole("textbox", { name: /your question/i });
+    await user.type(question, "My unsaved thoughts{Enter}");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Temporarily unavailable. Your draft is still in the text box below so you will not lose your thoughts.",
+    );
+    expect(question).toHaveValue("My unsaved thoughts");
+    expect(
+      screen.queryAllByText("My unsaved thoughts", {
+        selector: ".user-message",
+      }),
+    ).toHaveLength(0);
   });
 });

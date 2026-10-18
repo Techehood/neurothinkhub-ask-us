@@ -421,4 +421,95 @@ describe("POST /api/chat", () => {
     expect(res.body.reply).not.toContain("example.com");
     expect(res.body.reply).toContain("nhs.uk");
   });
+  test("applies a valid pattern of need after the base prompt with its own token budget", async () => {
+    process.env.MAX_RESPONSE_TOKENS = "1000";
+    const providerFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ content: [{ type: "text", text: "Answer" }] }),
+    });
+    vi.stubGlobal("fetch", providerFetch);
+    const handler = await loadHandler();
+
+    const res = await call(handler, {
+      question: "Help me shape this.",
+      sessionId: "session-pattern-translator-1",
+      context: { answerStyle: "quick-steps" },
+      patternKey: "translator",
+    });
+
+    const providerRequest = JSON.parse(providerFetch.mock.calls[0][1].body);
+    expect(res.body.activePatternKey).toBe("translator");
+    expect(providerRequest.max_tokens).toBe(900);
+    expect(providerRequest.system).toMatch(
+      /Optional visitor context:[\s\S]*\n\nACTIVE PATTERN OF NEED: The Creative Translator/,
+    );
+    expect(providerRequest.system).not.toMatch(/no more than 150 words/i);
+  });
+
+  test("caps a pattern budget at the configured maximum", async () => {
+    const providerFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ content: [{ type: "text", text: "Answer" }] }),
+    });
+    vi.stubGlobal("fetch", providerFetch);
+    const handler = await loadHandler();
+
+    await call(handler, {
+      question: "Help me shape this.",
+      sessionId: "session-pattern-capped-12",
+      patternKey: "translator",
+    });
+
+    expect(JSON.parse(providerFetch.mock.calls[0][1].body).max_tokens).toBe(
+      400,
+    );
+  });
+
+  test.each([undefined, "unknown", "__proto__", ["sensory"], 7])(
+    "ignores an invalid pattern key (%p) and answers normally",
+    async (patternKey) => {
+      const providerFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ content: [{ type: "text", text: "Answer" }] }),
+      });
+      vi.stubGlobal("fetch", providerFetch);
+      const handler = await loadHandler();
+
+      const res = await call(handler, {
+        question: "What might help?",
+        sessionId: "session-pattern-invalid-1",
+        patternKey,
+      });
+
+      const providerRequest = JSON.parse(providerFetch.mock.calls[0][1].body);
+      expect(res.statusCode).toBe(200);
+      expect(res.body.activePatternKey).toBeNull();
+      expect(providerRequest.system).not.toMatch(/ACTIVE PATTERN OF NEED/);
+      expect(providerRequest.max_tokens).toBe(250);
+    },
+  );
+
+  test("includes every brand language rule in the base prompt", async () => {
+    const providerFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ content: [{ type: "text", text: "Answer" }] }),
+    });
+    vi.stubGlobal("fetch", providerFetch);
+    const handler = await loadHandler();
+
+    await call(handler, {
+      question: "What might help?",
+      sessionId: "session-brand-rules-123",
+    });
+
+    const system = JSON.parse(providerFetch.mock.calls[0][1].body).system;
+    expect(system).toMatch(/identity-first language/i);
+    expect(system).toMatch(/Never use functioning labels/);
+    expect(system).toMatch(/disorder, deficit or medical flaw/);
+    expect(system).toMatch(/"superpower" framing/);
+    expect(system).toMatch(/puzzle-piece imagery/);
+    expect(system).toMatch(/environment as the barrier, not the person/);
+    expect(system).toMatch(/say "patterns of need"/);
+    expect(system).toMatch(/Never use the words "friction" or "persona"/);
+  });
 });

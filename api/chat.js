@@ -93,17 +93,28 @@ const PATTERN_RESPONSE_TOKENS = {
   translator: 1400,
 };
 
-function getResponseTokenBudget(answerStyle, configuredMaximum, patternKey) {
+// Audiences whose required framing needs more room than a blank-chat answer.
+const PERSONA_RESPONSE_TOKENS = {
+  "hr-ld": 500,
+};
+
+// Headroom above the 150-word guidance so answers are not cut mid-sentence.
+const DEFAULT_RESPONSE_TOKENS = 400;
+
+function getResponseTokenBudget(context, configuredMaximum, patternKey) {
   const patternMaximum = PATTERN_RESPONSE_TOKENS[patternKey];
   if (patternMaximum) return Math.min(configuredMaximum, patternMaximum);
+
+  const personaMaximum = PERSONA_RESPONSE_TOKENS[context.persona];
+  if (personaMaximum) return Math.min(configuredMaximum, personaMaximum);
 
   const styleMaximum = {
     "quick-steps": 220,
     checklist: 250,
     examples: 300,
     "detailed-explanation": 500,
-  }[answerStyle];
-  return Math.min(configuredMaximum, styleMaximum || 250);
+  }[context.answerStyle];
+  return Math.min(configuredMaximum, styleMaximum || DEFAULT_RESPONSE_TOKENS);
 }
 
 function setApiHeaders(res) {
@@ -193,7 +204,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: MODEL,
         max_tokens: getResponseTokenBudget(
-          context.answerStyle,
+          context,
           config.maxResponseTokens,
           pattern?.key,
         ),

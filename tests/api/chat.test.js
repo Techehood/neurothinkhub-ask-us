@@ -365,6 +365,7 @@ describe("POST /api/chat", () => {
   });
 
   test("uses a concise response budget unless a detailed explanation is selected", async () => {
+    process.env.MAX_RESPONSE_TOKENS = "1400";
     const providerFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ content: [{ type: "text", text: "Answer" }] }),
@@ -485,7 +486,7 @@ describe("POST /api/chat", () => {
       expect(res.statusCode).toBe(200);
       expect(res.body.activePatternKey).toBeNull();
       expect(providerRequest.system).not.toMatch(/ACTIVE PATTERN OF NEED/);
-      expect(providerRequest.max_tokens).toBe(250);
+      expect(providerRequest.max_tokens).toBe(400);
     },
   );
 
@@ -715,5 +716,42 @@ describe("POST /api/chat", () => {
         "Shared rate limits unavailable; using instance limits",
       );
     });
+  });
+  test("gives blank chat headroom and HR / L&D more room with matching guidance", async () => {
+    process.env.MAX_RESPONSE_TOKENS = "1400";
+    const providerFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ content: [{ type: "text", text: "Answer" }] }),
+    });
+    vi.stubGlobal("fetch", providerFetch);
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const handler = await loadHandler();
+
+    await call(handler, {
+      question: "What might help?",
+      sessionId: "session-blank-budget-123",
+      context: {},
+    });
+    await call(handler, {
+      question: "How should a 300-person firm handle adjustments?",
+      sessionId: "session-hr-budget-123456",
+      context: { persona: "hr-ld" },
+    });
+    await call(handler, {
+      question: "Help me plan.",
+      sessionId: "session-hr-pattern-12345",
+      context: { persona: "hr-ld" },
+      patternKey: "sensory",
+    });
+
+    const [blank, hr, patterned] = providerFetch.mock.calls.map(([, init]) =>
+      JSON.parse(init.body),
+    );
+    expect(blank.max_tokens).toBe(400);
+    expect(blank.system).toMatch(/no more than 150 words/);
+    expect(hr.max_tokens).toBe(500);
+    expect(hr.system).toMatch(/up to 250 words/);
+    expect(hr.system).toMatch(/always finish your final sentence/);
+    expect(patterned.max_tokens).toBe(200);
   });
 });

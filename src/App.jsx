@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PATTERNS_CONFIG, resolvePattern } from "./config/patterns.js";
 import "./styles.css";
 
 const MAX_QUESTION_CHARACTERS = 1500;
@@ -58,36 +59,6 @@ function StopIcon() {
   );
 }
 
-const FIRST_STEPS = [
-  "Share who you are (optional).",
-  "Describe your situation or question.",
-  "Ask follow-up questions to go deeper.",
-];
-
-const CONTEXT_FIELDS = [
-  {
-    key: "setting",
-    label: "Where is support needed?",
-    options: [
-      ["education", "Education"],
-      ["workplace", "Workplace"],
-      ["home", "Home"],
-      ["wellbeing", "Wellbeing"],
-      ["entrepreneurship", "Entrepreneurship"],
-    ],
-  },
-  {
-    key: "answerStyle",
-    label: "How would you like the answer?",
-    options: [
-      ["quick-steps", "Quick steps"],
-      ["checklist", "Checklist"],
-      ["examples", "Examples"],
-      ["detailed-explanation", "Detailed explanation"],
-    ],
-  },
-];
-
 const STARTER_PROMPTS = [
   "What could make it easier to start a difficult task?",
   "How can instructions be made clearer and easier to follow?",
@@ -108,12 +79,51 @@ const SIDE_ITEMS = {
   right: [
     { label: "Self-discovery" },
     { label: "Workplace tools" },
-    { label: "The Bridge" },
     { label: "Coaching" },
     { label: "Community" },
     { label: "Workshops" },
   ],
 };
+
+const DRAFT_KEPT_MESSAGE =
+  "Your draft is still in the text box below so you will not lose your thoughts.";
+
+function readPatternFromUrl() {
+  try {
+    return resolvePattern(
+      new URLSearchParams(window.location.search).get("pattern"),
+    );
+  } catch {
+    return null;
+  }
+}
+
+function PatternPills({ activePattern, onSelect }) {
+  return (
+    <div
+      className="pattern-pills"
+      role="group"
+      aria-label="Shape responses to a pattern of need"
+    >
+      {Object.keys(PATTERNS_CONFIG).map((key) => {
+        const pattern = PATTERNS_CONFIG[key];
+        const isActive = activePattern?.key === key;
+        return (
+          <button
+            key={key}
+            type="button"
+            aria-pressed={isActive}
+            onClick={() => onSelect(key)}
+            className={isActive ? "pattern-pill is-active" : "pattern-pill"}
+          >
+            <span className="pattern-pill-driver">{pattern.driver}:</span>{" "}
+            {pattern.title}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function createSessionId() {
   if (globalThis.crypto?.randomUUID)
@@ -157,68 +167,6 @@ function PersonaSelector({ persona, onChange }) {
             </button>
           );
         })}
-      </div>
-    </section>
-  );
-}
-
-function FirstSteps() {
-  return (
-    <ol className="first-steps" aria-label="How to use Ask NeuroThinkHub">
-      {FIRST_STEPS.map((step, index) => (
-        <li key={step}>
-          <span className="first-step-number" aria-hidden="true">
-            {index + 1}
-          </span>
-          <span>{step}</span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function ContextChoices({ context, onChange }) {
-  return (
-    <section className="context-panel" aria-labelledby="context-heading">
-      <div className="section-heading-row">
-        <div>
-          <h2 id="context-heading">Optional preferences</h2>
-          <p>Choose any that help, or skip them and ask your question now.</p>
-        </div>
-        {Object.keys(context).length > 0 && (
-          <button
-            className="text-button"
-            type="button"
-            onClick={() => onChange({})}
-          >
-            Clear choices
-          </button>
-        )}
-      </div>
-      <div className="context-grid">
-        {CONTEXT_FIELDS.map((field, index) => (
-          <label key={field.key} className="select-field">
-            <span>
-              {index + 1}. {field.label}
-            </span>
-            <select
-              value={context[field.key] || ""}
-              onChange={(event) =>
-                onChange({
-                  ...context,
-                  [field.key]: event.target.value || undefined,
-                })
-              }
-            >
-              <option value="">Skip this choice</option>
-              {field.options.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-        ))}
       </div>
     </section>
   );
@@ -341,6 +289,64 @@ function AnswerContent({ content }) {
   return <>{blocks}</>;
 }
 
+// Inside a cross-origin iframe the async Clipboard API needs the parent to
+// grant clipboard-write, so fall back to the older selection-based copy.
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const field = document.createElement("textarea");
+    field.value = text;
+    field.setAttribute("readonly", "");
+    field.style.position = "fixed";
+    field.style.opacity = "0";
+    document.body.appendChild(field);
+    field.select();
+    try {
+      return document.execCommand("copy");
+    } catch {
+      return false;
+    } finally {
+      field.remove();
+    }
+  }
+}
+
+function CopyButton({ text }) {
+  const [status, setStatus] = useState("idle");
+  const timerRef = useRef(null);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  async function handleCopy() {
+    const copied = await copyText(text);
+    setStatus(copied ? "copied" : "failed");
+    clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setStatus("idle"), 2000);
+  }
+
+  return (
+    <>
+      <button
+        type="button"
+        className="copy-button"
+        onClick={handleCopy}
+        aria-label="Copy response to clipboard"
+      >
+        {status === "copied" ? "Copied ✓" : "Copy"}
+      </button>
+      <span className="sr-only" aria-live="polite">
+        {status === "copied"
+          ? "Response copied."
+          : status === "failed"
+            ? "Could not copy. Please select the text instead."
+            : ""}
+      </span>
+    </>
+  );
+}
+
 function FeedbackControls({ message, conversation }) {
   const [status, setStatus] = useState("");
   const [reportOpen, setReportOpen] = useState(false);
@@ -429,9 +435,10 @@ function FeedbackControls({ message, conversation }) {
 
 export default function App() {
   const [persona, setPersona] = useState("");
-  const [context, setContext] = useState({});
   const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+  const [activePattern, setActivePattern] = useState(readPatternFromUrl);
+  const [input, setInput] = useState(() => activePattern?.seedPrompt ?? "");
+  const [isPreFilled, setIsPreFilled] = useState(() => Boolean(activePattern));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [announcement, setAnnouncement] = useState("");
@@ -469,15 +476,14 @@ export default function App() {
     const history = messages.map(({ role, content }) => ({ role, content }));
     setMessages((current) => [...current, { role: "user", content: question }]);
     setInput("");
+    setIsPreFilled(false);
     setLoading(true);
     setError("");
     setAnnouncement("");
 
     try {
-      const mergedContext = Object.fromEntries(
-        Object.entries(context).filter(([, value]) => value),
-      );
-      if (persona) mergedContext.persona = persona;
+      // An active pattern shapes the answer; audience labels would muddle it.
+      const mergedContext = persona && !activePattern ? { persona } : {};
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -487,6 +493,7 @@ export default function App() {
           history,
           context: mergedContext,
           sessionId: sessionIdRef.current,
+          ...(activePattern ? { patternKey: activePattern.key } : {}),
         }),
       });
       const data = await response.json();
@@ -500,9 +507,14 @@ export default function App() {
         { role: "assistant", content: data.reply, answerId: data.answerId },
       ]);
     } catch (requestError) {
+      // Put the question back so the draft-kept message stays true.
+      setMessages((current) => current.slice(0, -1));
+      setInput(question);
       setError(
-        requestError.message ||
-          "Could not reach Ask NeuroThinkHub. Please check your connection and try again.",
+        `${
+          requestError.message ||
+          "Could not reach Ask NeuroThinkHub. Please check your connection and try again."
+        } ${DRAFT_KEPT_MESSAGE}`,
       );
       setAnnouncement("The answer could not be prepared.");
     } finally {
@@ -538,6 +550,7 @@ export default function App() {
         transcript += event.results[index][0].transcript;
       }
       setInput(transcript.slice(0, MAX_QUESTION_CHARACTERS));
+      setIsPreFilled(false);
     };
     recognition.onerror = (event) => {
       setListening(false);
@@ -557,13 +570,38 @@ export default function App() {
     setListening(true);
   }
 
+  function handlePatternSelect(key) {
+    const matched = resolvePattern(key);
+    if (!matched) return;
+    setActivePattern(matched);
+    // Only replace the input if it holds nothing the visitor wrote.
+    if (!input.trim() || isPreFilled) {
+      setInput(matched.seedPrompt);
+      setIsPreFilled(true);
+    }
+  }
+
+  // Shared by the banner dismiss and "Start a blank conversation".
+  function clearPattern() {
+    setActivePattern(null);
+    if (isPreFilled) setInput("");
+    setIsPreFilled(false);
+  }
+
+  function handleClearPattern() {
+    clearPattern();
+    inputRef.current?.focus();
+  }
+
   function startAgain() {
     if (
+      messages.length > 0 &&
       !window.confirm(
-        "Start again and remove this conversation from the screen?",
+        "Clear this conversation and start fresh? Your current chat will be lost.",
       )
     )
       return;
+    clearPattern();
     setMessages([]);
     setInput("");
     setError("");
@@ -595,13 +633,13 @@ export default function App() {
             <div>
               <h1>Ask NeuroThinkHub</h1>
             </div>
-            {messages.length > 0 && (
+            {(messages.length > 0 || activePattern) && (
               <button
                 type="button"
                 className="secondary-button"
                 onClick={startAgain}
               >
-                Start Again
+                Start a blank conversation
               </button>
             )}
           </div>
@@ -621,16 +659,42 @@ export default function App() {
             Protect your privacy: do not submit names, addresses, medical
             records or confidential workplace information.
           </p>
+          <PatternPills
+            activePattern={activePattern}
+            onSelect={handlePatternSelect}
+          />
         </header>
 
-        <PersonaSelector persona={persona} onChange={setPersona} />
-
-        <FirstSteps />
-
-        <ContextChoices context={context} onChange={setContext} />
+        {!activePattern && (
+          <PersonaSelector persona={persona} onChange={setPersona} />
+        )}
 
         <section className="conversation" aria-label="Conversation">
+          {activePattern && (
+            <div className="active-pattern-banner" role="status">
+              <span>
+                Shaping responses for: <strong>{activePattern.title}</strong>
+                {" — "}
+                <em>{activePattern.humanVoice}</em>
+              </span>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={handleClearPattern}
+              >
+                Switch to blank chat
+              </button>
+            </div>
+          )}
+
           {messages.length === 0 && (
+            <p className="empty-state">
+              This space adapts to your pattern of need.
+            </p>
+          )}
+
+          {/* Only for a fully empty start, so they never push the input down. */}
+          {messages.length === 0 && !input.trim() && (
             <div className="starters">
               <p>Ask your own question now, or try one of these:</p>
               {STARTER_PROMPTS.map((prompt) => (
@@ -672,6 +736,7 @@ export default function App() {
                 ref={isNewestAnswer ? newestAnswerRef : null}
               >
                 <div className="message assistant-message">
+                  <CopyButton text={message.content} />
                   <AnswerContent content={message.content} />
                 </div>
                 <FeedbackControls
@@ -684,7 +749,7 @@ export default function App() {
 
           {loading && (
             <p className="loading-status" role="status">
-              Preparing your answer…
+              Preparing a calm, structured response…
             </p>
           )}
           {error && (
@@ -699,12 +764,25 @@ export default function App() {
 
         <div className="composer">
           <label htmlFor="question">Your question</label>
+          {isPreFilled && activePattern && (
+            <p className="editable-cue" id="editable-cue">
+              Editable starter prompt — change the bracketed text or rewrite
+              freely
+            </p>
+          )}
           <div className="composer-row">
             <textarea
               id="question"
               ref={inputRef}
+              className={isPreFilled ? "is-prefilled" : undefined}
+              aria-describedby={
+                isPreFilled && activePattern ? "editable-cue" : undefined
+              }
               value={input}
-              onChange={(event) => setInput(event.target.value)}
+              onChange={(event) => {
+                setInput(event.target.value);
+                if (isPreFilled) setIsPreFilled(false);
+              }}
               onKeyDown={handleKeyDown}
               disabled={loading}
               maxLength={MAX_QUESTION_CHARACTERS}
@@ -728,9 +806,8 @@ export default function App() {
               className="send-button"
               onClick={() => sendMessage()}
               disabled={loading || !input.trim()}
-              aria-label="Send question"
             >
-              Send
+              {loading ? "Working…" : "Send message"}
             </button>
           </div>
           {voiceMessage && (

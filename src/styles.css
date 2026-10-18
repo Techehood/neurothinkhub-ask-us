@@ -65,7 +65,6 @@ button:disabled {
 }
 
 .app-header,
-.context-panel,
 .composer {
   padding: 18px;
 }
@@ -135,42 +134,6 @@ h2 {
   border: 1px solid #c89177;
 }
 
-.context-panel {
-  background: #fcfaf8;
-  border-bottom: 1px solid #ead9ce;
-}
-
-.context-panel p {
-  margin-bottom: 12px;
-  color: #574f64;
-  font-size: 0.86rem;
-}
-
-.context-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.select-field {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 6px;
-  color: #302b3a;
-  font-size: 0.82rem;
-  font-weight: 650;
-}
-
-.select-field select {
-  width: 100%;
-  padding: 8px 34px 8px 10px;
-  color: #1c2436;
-  background: #fff;
-  border: 1px solid #84798f;
-  border-radius: 8px;
-}
-
 .text-button,
 .secondary-button {
   flex-shrink: 0;
@@ -179,6 +142,62 @@ h2 {
   background: #fff;
   border: 1px solid #766a80;
   border-radius: 8px;
+}
+
+.pattern-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.pattern-pill {
+  padding: 7px 12px;
+  text-align: left;
+  color: #302b3a;
+  background: #fff;
+  border: 1px solid #766a80;
+  border-radius: 999px;
+  font-size: 0.86rem;
+}
+
+.pattern-pill.is-active {
+  color: #fff;
+  background: #594a66;
+  border-color: #594a66;
+}
+
+.pattern-pill-driver {
+  font-weight: 700;
+}
+
+.active-pattern-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  color: #30253a;
+  background: #f4eaf8;
+  border-left: 5px solid #594a66;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.empty-state {
+  margin-bottom: 8px;
+  color: #574f64;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.editable-cue {
+  margin: 0 0 6px;
+  color: #574f64;
+  font-size: 0.82rem;
 }
 
 .conversation {
@@ -228,6 +247,31 @@ h2 {
   color: #1c2436;
   background: #f5f0ed;
   white-space: normal;
+}
+
+.copy-button {
+  float: right;
+  min-height: 32px;
+  margin: -4px -6px 4px 12px;
+  padding: 4px 8px;
+  color: #594a66;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.copy-button:hover {
+  background: #ece3ef;
+}
+
+/* Keep the answer's first line level with the floated Copy button. */
+.copy-button + .sr-only + * {
+  margin-top: 0;
 }
 
 .assistant-message > :first-child {
@@ -381,6 +425,10 @@ h2 {
   color: #1c2436;
   border: 1px solid #766a80;
   border-radius: 9px;
+}
+
+.composer textarea.is-prefilled {
+  border: 2px dashed #594a66;
 }
 
 .send-button,
@@ -541,14 +589,9 @@ h2 {
 
 @media (max-width: 680px) {
   .app-header,
-  .context-panel,
   .conversation,
   .composer {
     padding: 14px;
-  }
-
-  .context-grid {
-    grid-template-columns: 1fr;
   }
 
   .section-heading-row {
@@ -658,58 +701,18 @@ h2 {
   border-color: #594a66;
 }
 
-/* ---- First steps strip ---- */
-
-.first-steps {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  margin: 0 18px 1rem;
-  list-style: none;
-  background: transparent;
-  border-left: 3px solid #594a66;
-}
-
-.first-steps li {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-  color: #333333;
-  line-height: 1.5;
-}
-
-.first-step-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  flex-shrink: 0;
-  font-weight: 600;
-  color: #fafaee;
-  background: #594a66;
-  border-radius: 50%;
-}
-
 /* ---- Tablet (820px and below) ---- */
 
 @media (max-width: 820px) {
   .persona-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-
-  .first-steps {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* ---- Mobile (480px and below) ---- */
 
 @media (max-width: 480px) {
-  .persona-panel,
-  .first-steps {
+  .persona-panel {
     margin: 0 14px 1rem;
     padding: 1rem;
   }

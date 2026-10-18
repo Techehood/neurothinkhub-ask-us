@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { getPilotConfig } from "./_lib/pilot-config.js";
 import { buildSystemPrompt } from "./_lib/system-prompt.js";
 import { checkRequestLimits } from "./_lib/rate-limit.js";
+import { resolvePattern } from "../src/config/patterns.js";
 
 const MODEL = "claude-haiku-4-5-20251001";
 const CONTEXT_VALUES = {
@@ -82,7 +83,18 @@ function limitAndFilterReply(text, config) {
   );
 }
 
-function getResponseTokenBudget(answerStyle, configuredMaximum) {
+// Patterns of need set their own budget, still capped by MAX_RESPONSE_TOKENS.
+const PATTERN_RESPONSE_TOKENS = {
+  sensory: 200,
+  masking: 500,
+  scaffolder: 600,
+  translator: 1400,
+};
+
+function getResponseTokenBudget(answerStyle, configuredMaximum, patternKey) {
+  const patternMaximum = PATTERN_RESPONSE_TOKENS[patternKey];
+  if (patternMaximum) return Math.min(configuredMaximum, patternMaximum);
+
   const styleMaximum = {
     "quick-steps": 220,
     checklist: 250,
@@ -152,6 +164,8 @@ export default async function handler(req, res) {
   }
 
   const context = cleanContext(req.body?.context);
+  // Only the key crosses the trust boundary; guardrail text comes from config.
+  const pattern = resolvePattern(req.body?.patternKey);
   const history = cleanHistory(req.body?.history, config.maxQuestionCharacters);
   const messages = [...history, { role: "user", content: question }];
   const controller = new AbortController();
@@ -174,8 +188,13 @@ export default async function handler(req, res) {
         max_tokens: getResponseTokenBudget(
           context.answerStyle,
           config.maxResponseTokens,
+          pattern?.key,
         ),
-        system: buildSystemPrompt(context, config.approvedResourceHosts),
+        system: buildSystemPrompt(
+          context,
+          config.approvedResourceHosts,
+          pattern,
+        ),
         messages,
       }),
     });
@@ -190,7 +209,11 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     const reply = limitAndFilterReply(data.content?.[0]?.text, config);
-    return res.status(200).json({ reply, answerId: `ans_${randomUUID()}` });
+    return res.status(200).json({
+      reply,
+      answerId: `ans_${randomUUID()}`,
+      activePatternKey: pattern?.key ?? null,
+    });
   } catch (error) {
     if (error?.name === "AbortError") {
       return res.status(504).json({

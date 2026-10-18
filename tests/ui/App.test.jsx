@@ -53,7 +53,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     expect(request.context).toEqual({});
   });
 
-  test("keeps all optional choices visible, changeable and sends them as structured context", async () => {
+  test("keeps the audience choice changeable and sends it as structured context", async () => {
     const user = userEvent.setup();
     fetch.mockReturnValueOnce(
       jsonResponse({ reply: "Try this.", answerId: "ans_2" }),
@@ -61,14 +61,6 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     render(<App />);
 
     await user.click(screen.getByRole("radio", { name: "Educator" }));
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: /where is support needed/i }),
-      "education",
-    );
-    await user.selectOptions(
-      screen.getByRole("combobox", { name: /how would you like the answer/i }),
-      "examples",
-    );
     await user.type(
       screen.getByRole("textbox", { name: /your question/i }),
       "How can instructions be clearer?",
@@ -77,11 +69,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
 
     await screen.findByText("Try this.");
     const request = JSON.parse(fetch.mock.calls[0][1].body);
-    expect(request.context).toEqual({
-      persona: "educator",
-      setting: "education",
-      answerStyle: "examples",
-    });
+    expect(request.context).toEqual({ persona: "educator" });
     expect(screen.getByRole("radio", { name: "Educator" })).toHaveAttribute(
       "aria-checked",
       "true",
@@ -481,5 +469,36 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     expect(
       screen.getByText("This space adapts to your pattern of need."),
     ).toBeVisible();
+  });
+  test("blank chat shows the audience choice and mic but no steps or preference dropdowns", () => {
+    render(<App />);
+    expect(screen.getByRole("radiogroup", { name: "I am…" })).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /speak your question/i }),
+    ).toBeVisible();
+    expect(screen.queryByText(/optional preferences/i)).toBeNull();
+    expect(screen.queryByRole("combobox")).toBeNull();
+    expect(screen.queryByText(/share who you are/i)).toBeNull();
+  });
+
+  test("an active pattern hides the audience choice and does not send it", async () => {
+    const user = userEvent.setup();
+    fetch.mockReturnValueOnce(jsonResponse({ reply: "Calm.", answerId: "a" }));
+    render(<App />);
+
+    await user.click(screen.getByRole("radio", { name: "Manager" }));
+    await user.click(
+      screen.getByRole("button", { name: /sensory-sensitive/i }),
+    );
+    expect(screen.queryByRole("radiogroup", { name: "I am…" })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /speak your question/i }),
+    ).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /send message/i }));
+    await screen.findByText("Calm.");
+    const request = JSON.parse(fetch.mock.calls[0][1].body);
+    expect(request.context).toEqual({});
+    expect(request.patternKey).toBe("sensory");
   });
 });

@@ -59,36 +59,6 @@ function StopIcon() {
   );
 }
 
-const FIRST_STEPS = [
-  "Share who you are (optional).",
-  "Describe your situation or question.",
-  "Ask follow-up questions to go deeper.",
-];
-
-const CONTEXT_FIELDS = [
-  {
-    key: "setting",
-    label: "Where is support needed?",
-    options: [
-      ["education", "Education"],
-      ["workplace", "Workplace"],
-      ["home", "Home"],
-      ["wellbeing", "Wellbeing"],
-      ["entrepreneurship", "Entrepreneurship"],
-    ],
-  },
-  {
-    key: "answerStyle",
-    label: "How would you like the answer?",
-    options: [
-      ["quick-steps", "Quick steps"],
-      ["checklist", "Checklist"],
-      ["examples", "Examples"],
-      ["detailed-explanation", "Detailed explanation"],
-    ],
-  },
-];
-
 const STARTER_PROMPTS = [
   "What could make it easier to start a difficult task?",
   "How can instructions be made clearer and easier to follow?",
@@ -197,68 +167,6 @@ function PersonaSelector({ persona, onChange }) {
             </button>
           );
         })}
-      </div>
-    </section>
-  );
-}
-
-function FirstSteps() {
-  return (
-    <ol className="first-steps" aria-label="How to use Ask NeuroThinkHub">
-      {FIRST_STEPS.map((step, index) => (
-        <li key={step}>
-          <span className="first-step-number" aria-hidden="true">
-            {index + 1}
-          </span>
-          <span>{step}</span>
-        </li>
-      ))}
-    </ol>
-  );
-}
-
-function ContextChoices({ context, onChange }) {
-  return (
-    <section className="context-panel" aria-labelledby="context-heading">
-      <div className="section-heading-row">
-        <div>
-          <h2 id="context-heading">Optional preferences</h2>
-          <p>Choose any that help, or skip them and ask your question now.</p>
-        </div>
-        {Object.keys(context).length > 0 && (
-          <button
-            className="text-button"
-            type="button"
-            onClick={() => onChange({})}
-          >
-            Clear choices
-          </button>
-        )}
-      </div>
-      <div className="context-grid">
-        {CONTEXT_FIELDS.map((field, index) => (
-          <label key={field.key} className="select-field">
-            <span>
-              {index + 1}. {field.label}
-            </span>
-            <select
-              value={context[field.key] || ""}
-              onChange={(event) =>
-                onChange({
-                  ...context,
-                  [field.key]: event.target.value || undefined,
-                })
-              }
-            >
-              <option value="">Skip this choice</option>
-              {field.options.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-        ))}
       </div>
     </section>
   );
@@ -469,7 +377,6 @@ function FeedbackControls({ message, conversation }) {
 
 export default function App() {
   const [persona, setPersona] = useState("");
-  const [context, setContext] = useState({});
   const [messages, setMessages] = useState([]);
   const [activePattern, setActivePattern] = useState(readPatternFromUrl);
   const [input, setInput] = useState(() => activePattern?.seedPrompt ?? "");
@@ -517,10 +424,8 @@ export default function App() {
     setAnnouncement("");
 
     try {
-      const mergedContext = Object.fromEntries(
-        Object.entries(context).filter(([, value]) => value),
-      );
-      if (persona) mergedContext.persona = persona;
+      // An active pattern shapes the answer; audience labels would muddle it.
+      const mergedContext = persona && !activePattern ? { persona } : {};
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -702,11 +607,9 @@ export default function App() {
           />
         </header>
 
-        <PersonaSelector persona={persona} onChange={setPersona} />
-
-        <FirstSteps />
-
-        <ContextChoices context={context} onChange={setContext} />
+        {!activePattern && (
+          <PersonaSelector persona={persona} onChange={setPersona} />
+        )}
 
         <section className="conversation" aria-label="Conversation">
           {activePattern && (

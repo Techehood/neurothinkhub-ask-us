@@ -512,4 +512,28 @@ describe("POST /api/chat", () => {
     expect(system).toMatch(/say "patterns of need"/);
     expect(system).toMatch(/Never use the words "friction" or "persona"/);
   });
+  test("sensory guardrail forbids structure and overrides the base formatting rules", async () => {
+    const providerFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ content: [{ type: "text", text: "Answer" }] }),
+    });
+    vi.stubGlobal("fetch", providerFetch);
+    const handler = await loadHandler();
+
+    await call(handler, {
+      question: "Everything feels like too much.",
+      sessionId: "session-sensory-prose-1",
+      patternKey: "sensory",
+    });
+
+    const system = JSON.parse(providerFetch.mock.calls[0][1].body).system;
+    expect(system).toMatch(/short prose paragraphs only/);
+    expect(system).toMatch(
+      /Do not use bold text, headers, bullet points, or numbered lists under any circumstances/,
+    );
+    expect(system).toMatch(/signal to shorten the response instead/);
+    expect(system).toMatch(
+      /override the response and formatting requirements above wherever they conflict/,
+    );
+  });
 });

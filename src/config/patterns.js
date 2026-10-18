@@ -55,9 +55,12 @@ MANDATORY RESPONSE SHAPE:
     systemGuardrail: `ACTIVE PATTERN OF NEED: The Sensory-Sensitive Worker (Core Driver: Safety).
 MANDATORY RESPONSE SHAPE:
 1. Keep the entire response strictly under 100 words.
-2. Use minimal formatting: short, calm sentences, generous whitespace, and no dense walls of text or nested lists.
-3. Ask at most ONE gentle clarifying question at the end of the response.
-4. Language rules: Use identity-first language only ("autistic person", never "person with autism"). Never use functioning labels, deficit framing, or "superpower" framing. Frame the environment as the barrier, never the person. Never use the words "friction" or "persona" in user-facing output; use "pattern of need".`,
+2. Respond in short prose paragraphs only, using short, calm sentences.
+3. Do not use bold text, headers, bullet points, or numbered lists under any circumstances.
+4. Separate ideas with blank lines, not with structural formatting.
+5. If you feel the urge to organise with headers or bullets, that is a signal to shorten the response instead.
+6. Ask at most ONE gentle clarifying question at the end of the response.
+7. Language rules: Use identity-first language only ("autistic person", never "person with autism"). Never use functioning labels, deficit framing, or "superpower" framing. Frame the environment as the barrier, never the person. Never use the words "friction" or "persona" in user-facing output; use "pattern of need".`,
   },
 
   masking: {

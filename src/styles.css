@@ -1,13 +1,35 @@
+/* ============================================================
+   NeuroThinkHub locked brand palette (Contributor Guide)
+   Contrast notes (WCAG AA):
+   - Terracotta fills carry white text only at 19px+ bold (4.0:1, large text).
+   - Lilac is used for borders and inactive states, never for text (3.2:1).
+   ============================================================ */
 :root {
-  color: #1c2436;
-  background: #fbf6f2;
-  font-family:
-    Lexend,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  --terracotta: #b86b4a;
+  --aubergine: #594a66;
+  --near-black: #2d2730;
+  --lilac: #8e7e95;
+  --text: #333333;
+  --cream: #f2ebd0;
+  --off-white: #fafaee;
+  --sage: #dde0c5;
+  --white: #ffffff;
+  /* Functional error colours, kept outside the brand palette for clarity. */
+  --error-text: #6e271d;
+  --error-fill: #fff0ed;
+  --error-border: #9e3f32;
+
+  --font-body:
+    Lexend, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-heading:
+    Poppins, Lexend, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  color: var(--text);
+  background: var(--cream);
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.55;
   font-synthesis: none;
 }
 
@@ -31,11 +53,15 @@ select {
   min-height: 44px;
 }
 
+button {
+  cursor: pointer;
+}
+
 button:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 .answer-block:focus-visible {
-  outline: 3px solid #1c607a;
+  outline: 3px solid var(--terracotta);
   outline-offset: 3px;
 }
 
@@ -52,7 +78,7 @@ button:disabled {
       190px
     );
   justify-content: center;
-  background: #fbf6f2;
+  background: var(--cream);
 }
 
 .chat-card {
@@ -60,8 +86,8 @@ button:disabled {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
-  box-shadow: 0 0 28px rgba(28, 36, 54, 0.08);
+  background: var(--off-white);
+  box-shadow: 0 0 28px rgba(45, 39, 48, 0.08);
 }
 
 .app-header,
@@ -70,12 +96,13 @@ button:disabled {
 }
 
 .app-header {
-  border-bottom: 1px solid #ead9ce;
+  border-bottom: 1px solid rgba(45, 39, 48, 0.12);
 }
 
 .title-row,
 .section-heading-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
@@ -83,9 +110,9 @@ button:disabled {
 
 .eyebrow {
   margin: 0 0 3px;
-  color: #5d5067;
-  font-size: 0.78rem;
-  font-weight: 700;
+  color: var(--aubergine);
+  font-size: 0.875rem;
+  font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -96,29 +123,42 @@ p {
   margin-top: 0;
 }
 
+h1,
+h2,
+.answer-heading {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
 h1 {
   margin-bottom: 14px;
-  color: #594a66;
-  font-size: clamp(1.35rem, 4vw, 1.8rem);
+  color: var(--aubergine);
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  line-height: 1.25;
 }
 
 h2 {
   margin-bottom: 5px;
-  font-size: 1rem;
+  color: var(--aubergine);
+  font-size: 1.125rem;
 }
 
 .pilot-notice,
 .privacy-notice {
   border-radius: 10px;
-  font-size: 0.9rem;
+  font-size: 1rem;
   line-height: 1.55;
 }
 
 .pilot-notice {
-  padding: 12px;
-  color: #30253a;
-  background: #f4eaf8;
-  border-left: 5px solid #594a66;
+  padding: 12px 14px;
+  color: var(--text);
+  background: var(--cream);
+  border-left: 5px solid var(--aubergine);
+}
+
+.pilot-notice strong {
+  color: var(--near-black);
 }
 
 .pilot-notice strong,
@@ -126,51 +166,94 @@ h2 {
   display: block;
 }
 
+/* "Immediate Next Step" treatment. */
 .privacy-notice {
   margin: 10px 0 0;
-  padding: 10px 12px;
-  color: #513329;
-  background: #fff1e8;
-  border: 1px solid #c89177;
+  padding: 10px 14px;
+  color: var(--text);
+  background: var(--off-white);
+  border-left: 3px solid var(--terracotta);
 }
 
 .text-button,
 .secondary-button {
   flex-shrink: 0;
-  padding: 7px 12px;
-  color: #4f4059;
-  background: #fff;
-  border: 1px solid #766a80;
+  padding: 7px 14px;
+  color: var(--near-black);
+  background: var(--off-white);
+  border: 1.5px solid var(--near-black);
   border-radius: 8px;
+  font-weight: 500;
+}
+
+.text-button:hover,
+.secondary-button:hover {
+  background: var(--cream);
 }
 
 .pattern-pills {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 14px;
 }
 
 .pattern-pill {
-  padding: 7px 12px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 16px;
   text-align: left;
-  color: #302b3a;
-  background: #fff;
-  border: 1px solid #766a80;
-  border-radius: 999px;
-  font-size: 0.86rem;
+  color: var(--near-black);
+  background: var(--white);
+  border: 1.5px solid var(--lilac);
+  border-radius: 18px;
+  font-size: 1rem;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+
+.pattern-pill:hover {
+  background: var(--cream);
+  border-color: var(--aubergine);
+}
+
+/* Eyebrow matching the hub's pattern matrix. Terracotta text at 11px is
+   4.0:1 (below AA), so the text is aubergine with a terracotta marker. */
+.pattern-pill-driver {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--aubergine);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.pattern-pill-driver::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background: var(--terracotta);
+  border-radius: 50%;
 }
 
 .pattern-pill.is-active {
-  color: #fff;
-  background: #594a66;
-  border-color: #594a66;
+  color: var(--white);
+  background: var(--aubergine);
+  border-color: var(--aubergine);
 }
 
-.pattern-pill-driver {
-  font-weight: 700;
+/* Terracotta on aubergine is unreadable (2:1), so the active eyebrow is cream. */
+.pattern-pill.is-active .pattern-pill-driver {
+  color: var(--cream);
 }
 
+/* "Try This" treatment: cream fill with a terracotta edge. */
 .active-pattern-banner {
   display: flex;
   flex-wrap: wrap;
@@ -178,26 +261,30 @@ h2 {
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 14px;
-  padding: 10px 12px;
-  color: #30253a;
-  background: #f4eaf8;
-  border-left: 5px solid #594a66;
+  padding: 12px 14px;
+  color: var(--text);
+  background: var(--cream);
+  border-left: 5px solid var(--terracotta);
   border-radius: 10px;
-  font-size: 0.9rem;
+  font-size: 1rem;
   line-height: 1.5;
+}
+
+.active-pattern-banner strong {
+  color: var(--near-black);
 }
 
 .empty-state {
   margin-bottom: 8px;
-  color: #574f64;
-  font-size: 0.9rem;
-  font-weight: 650;
+  color: var(--aubergine);
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 .editable-cue {
   margin: 0 0 6px;
-  color: #574f64;
-  font-size: 0.82rem;
+  color: var(--text);
+  font-size: 1rem;
 }
 
 .conversation {
@@ -213,39 +300,43 @@ h2 {
 
 .starters p {
   margin-bottom: 2px;
-  color: #574f64;
-  font-size: 0.9rem;
+  color: var(--text);
+  font-size: 1rem;
 }
 
 .starters button {
-  padding: 10px 12px;
+  padding: 10px 14px;
   text-align: left;
-  color: #302b3a;
-  background: #f8e6d8;
-  border: 1px solid #d6b8a3;
+  color: var(--near-black);
+  background: var(--cream);
+  border: 1.5px solid var(--terracotta);
   border-radius: 9px;
+}
+
+.starters button:hover {
+  border-color: var(--aubergine);
 }
 
 .message {
   width: fit-content;
   max-width: min(88%, 620px);
   margin-bottom: 12px;
-  padding: 11px 14px;
+  padding: 12px 16px;
   border-radius: 14px;
-  font-size: 0.95rem;
-  line-height: 1.58;
+  font-size: 1rem;
+  line-height: 1.6;
   white-space: pre-wrap;
 }
 
 .user-message {
   margin-left: auto;
-  color: #fff;
-  background: #594a66;
+  color: var(--white);
+  background: var(--aubergine);
 }
 
 .assistant-message {
-  color: #1c2436;
-  background: #f5f0ed;
+  color: var(--text);
+  background: var(--cream);
   white-space: normal;
 }
 
@@ -254,19 +345,20 @@ h2 {
   min-height: 32px;
   margin: -4px -6px 4px 12px;
   padding: 4px 8px;
-  color: #594a66;
+  color: var(--aubergine);
   background: transparent;
   border: 0;
   border-radius: 6px;
-  font-size: 0.82rem;
-  font-weight: 650;
+  font-size: 1rem;
+  font-weight: 500;
   text-decoration: underline;
+  text-decoration-color: var(--terracotta);
+  text-decoration-thickness: 2px;
   text-underline-offset: 3px;
-  cursor: pointer;
 }
 
 .copy-button:hover {
-  background: #ece3ef;
+  background: var(--off-white);
 }
 
 /* Keep the answer's first line level with the floated Copy button. */
@@ -299,7 +391,8 @@ h2 {
 
 .answer-heading {
   margin: 14px 0 5px;
-  font-size: 1rem;
+  color: var(--near-black);
+  font-size: 1.05rem;
   line-height: 1.35;
 }
 
@@ -310,9 +403,9 @@ h2 {
 
 .feedback {
   margin-top: -4px;
-  padding: 10px;
-  background: #faf8fb;
-  border: 1px solid #ded7e3;
+  padding: 10px 12px;
+  background: var(--off-white);
+  border: 1px solid rgba(45, 39, 48, 0.15);
   border-radius: 10px;
 }
 
@@ -325,18 +418,24 @@ h2 {
 
 .feedback-actions span {
   margin-right: 3px;
-  font-size: 0.82rem;
-  font-weight: 700;
+  color: var(--near-black);
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 .feedback-actions button,
 .concern-form button {
-  min-height: 38px;
-  padding: 7px 10px;
-  color: #3e3347;
-  background: #fff;
-  border: 1px solid #766a80;
+  min-height: 40px;
+  padding: 7px 12px;
+  color: var(--near-black);
+  background: var(--white);
+  border: 1.5px solid var(--near-black);
   border-radius: 7px;
+}
+
+.feedback-actions button:hover,
+.concern-form button:hover {
+  background: var(--cream);
 }
 
 .concern-form {
@@ -348,8 +447,8 @@ h2 {
 .concern-form label:not(.checkbox-field) {
   display: grid;
   gap: 6px;
-  font-size: 0.88rem;
-  font-weight: 650;
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 .concern-form label span {
@@ -359,7 +458,7 @@ h2 {
 .concern-form textarea {
   width: 100%;
   padding: 9px;
-  border: 1px solid #766a80;
+  border: 1.5px solid var(--lilac);
   border-radius: 7px;
 }
 
@@ -367,14 +466,15 @@ h2 {
   display: flex;
   align-items: flex-start;
   gap: 9px;
-  font-size: 0.84rem;
-  line-height: 1.45;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 .checkbox-field input {
   width: 20px;
   height: 20px;
   flex: 0 0 auto;
+  accent-color: var(--aubergine);
 }
 
 .feedback-status,
@@ -382,33 +482,34 @@ h2 {
 .error-message,
 .character-count {
   margin-bottom: 0;
-  font-size: 0.82rem;
+  font-size: 1rem;
 }
 
 .loading-status {
-  color: #4b4154;
-  font-weight: 650;
+  color: var(--aubergine);
+  font-weight: 500;
 }
 
 .error-message {
-  padding: 10px;
-  color: #6e271d;
-  background: #fff0ed;
-  border-left: 4px solid #9e3f32;
+  padding: 10px 12px;
+  color: var(--error-text);
+  background: var(--error-fill);
+  border-left: 4px solid var(--error-border);
 }
 
 .composer {
   position: sticky;
   bottom: 0;
-  background: #fff;
-  border-top: 1px solid #ead9ce;
+  background: var(--off-white);
+  border-top: 1px solid rgba(45, 39, 48, 0.12);
 }
 
 .composer > label {
   display: block;
   margin-bottom: 6px;
-  font-size: 0.88rem;
-  font-weight: 700;
+  color: var(--near-black);
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 .composer-row {
@@ -422,55 +523,71 @@ h2 {
   flex: 1;
   resize: vertical;
   padding: 10px 12px;
-  color: #1c2436;
-  border: 1px solid #766a80;
+  color: var(--text);
+  background: var(--white);
+  border: 1.5px solid var(--lilac);
   border-radius: 9px;
 }
 
 .composer textarea.is-prefilled {
-  border: 2px dashed #594a66;
+  border: 2px dashed var(--terracotta);
 }
 
 .send-button,
 .voice-button {
-  padding: 0 15px;
-  border-radius: 9px;
+  align-self: center;
+  min-height: 48px;
+  border: 2px solid var(--near-black);
+  border-radius: 40px;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
 }
 
+/* Primary CTA, as the hub's "Open Ask" buttons. Off-white on terracotta is
+   3.8:1, so the label is 19px bold to qualify as WCAG large text (3:1). */
 .send-button {
-  color: #fff;
-  background: #594a66;
-  border: 2px solid #594a66;
+  padding: 12px 32px;
+  color: var(--off-white);
+  background: var(--terracotta);
+  font-family: var(--font-heading);
+  font-size: 19px;
   font-weight: 700;
 }
 
-.voice-button {
-  color: #3e3347;
-  background: #f8e6d8;
-  border: 1px solid #a86e54;
+.send-button:hover:not(:disabled) {
+  color: var(--off-white);
+  background: var(--aubergine);
 }
 
-.voice-button.is-active {
-  color: #fff;
-  background: #8f3d32;
+.send-button:disabled {
+  opacity: 0.5;
 }
 
 .voice-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 46px;
+  min-width: 56px;
+  padding: 12px 20px;
+  color: var(--off-white);
+  background: var(--lilac);
+}
+
+.voice-button.is-active {
+  color: var(--off-white);
+  background: var(--terracotta);
 }
 
 .voice-message {
   margin: 6px 0 0;
-  color: #8f3d32;
-  font-size: 0.9rem;
+  color: var(--error-text);
+  font-size: 1rem;
 }
 
 .character-count {
   margin-top: 5px;
-  color: #574f64;
+  color: var(--text);
   text-align: right;
 }
 
@@ -481,8 +598,11 @@ h2 {
 
 .side-panel h2 {
   margin: 14px 0;
-  font-size: 0.78rem;
-  letter-spacing: 0.05em;
+  color: var(--aubergine);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -496,37 +616,37 @@ h2 {
 
 .side-panel li {
   padding: 0;
-  color: #41364a;
+  color: var(--aubergine);
   background: transparent;
   border-radius: 8px;
-  font-size: 0.78rem;
+  font-size: 0.9375rem;
 }
 
-.side-panel li:not(:has(.side-panel-link)) {
+.side-panel li:not(:has(.side-panel-link)),
+.side-panel-link {
   padding: 8px;
-  background: #eee8f2;
+  color: var(--aubergine);
+  background: var(--off-white);
+  border: 1px solid rgba(142, 126, 149, 0.3);
+  border-radius: 8px;
 }
 
 .side-panel-link {
   display: block;
-  padding: 8px;
-  color: #41364a;
-  background: #eee8f2;
-  border-radius: 8px;
   text-decoration: none;
   transition:
     background-color 120ms ease,
-    color 120ms ease;
+    border-color 120ms ease;
 }
 
 .side-panel-link:hover,
 .side-panel-link:focus-visible {
-  background: #594a66;
-  color: #fafaee;
+  background: var(--cream);
+  border-color: var(--terracotta);
 }
 
 .side-panel-link:focus-visible {
-  outline: 3px solid #b86b4a;
+  outline: 3px solid var(--terracotta);
   outline-offset: 2px;
 }
 
@@ -542,7 +662,7 @@ h2 {
   display: block;
   width: 38px;
   height: 38px;
-  background: #7b6987;
+  background: var(--aubergine);
   border-radius: 50%;
 }
 
@@ -557,7 +677,7 @@ h2 {
 .tree-mark span:nth-child(3) {
   left: 13px;
   top: 2px;
-  background: #a795b1;
+  background: var(--lilac);
 }
 
 .sr-only {
@@ -611,10 +731,14 @@ h2 {
     min-width: 100%;
   }
 
-  .send-button,
-  .voice-button {
+  .send-button {
     flex: 1;
-    min-height: 46px;
+    padding: 12px 20px;
+    white-space: nowrap;
+  }
+
+  .voice-button {
+    flex: 0 0 auto;
   }
 
   .message {
@@ -623,6 +747,10 @@ h2 {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .persona-chip:hover {
+    transform: none;
+  }
+
   *,
   *::before,
   *::after {
@@ -634,8 +762,7 @@ h2 {
 }
 
 /* ============================================================
-   Ask NeuroThinkHub — persona selector + first steps
-   Brand: aubergine #594A66, cream #F2EBD0, terracotta #B86B4A
+   Ask NeuroThinkHub — "I am…" audience selector
    ============================================================ */
 
 .persona-panel {
@@ -644,21 +771,21 @@ h2 {
   gap: 0.75rem;
   padding: 1.25rem 1.5rem;
   margin: 0 18px 1rem;
-  background: #fafaee;
-  border: 1px solid rgba(89, 74, 102, 0.15);
+  background: var(--cream);
+  border-left: 3px solid var(--aubergine);
   border-radius: 12px;
 }
 
 .persona-panel h2 {
   margin: 0 0 0.25rem 0;
   font-size: 1.15rem;
-  color: #2d2730;
+  color: var(--aubergine);
 }
 
 .persona-panel p {
   margin: 0;
-  font-size: 0.95rem;
-  color: #333333;
+  font-size: 1rem;
+  color: var(--text);
   line-height: 1.5;
 }
 
@@ -674,31 +801,32 @@ h2 {
   padding: 0.55rem 1rem;
   min-height: 44px;
   font-family: inherit;
-  font-size: 0.95rem;
-  color: #2d2730;
-  background: #ffffff;
-  border: 1.5px solid #594a66;
+  font-size: 1rem;
+  color: var(--aubergine);
+  background: var(--off-white);
+  border: 1.5px solid var(--lilac);
   border-radius: 999px;
-  cursor: pointer;
   text-align: center;
   transition:
     background-color 120ms ease,
-    color 120ms ease;
+    border-color 120ms ease,
+    transform 120ms ease;
 }
 
 .persona-chip:hover {
-  background: #f2ebd0;
+  border-color: var(--terracotta);
+  transform: translateY(-1px);
 }
 
 .persona-chip:focus-visible {
-  outline: 3px solid #b86b4a;
+  outline: 3px solid var(--terracotta);
   outline-offset: 2px;
 }
 
 .persona-chip.is-active {
-  background: #594a66;
-  color: #fafaee;
-  border-color: #594a66;
+  background: var(--aubergine);
+  color: var(--off-white);
+  border-color: transparent;
 }
 
 /* ---- Tablet (820px and below) ---- */

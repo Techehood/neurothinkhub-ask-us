@@ -553,4 +553,12 @@ describe("Ask NeuroThinkHub pilot UI", () => {
       screen.getByRole("button", { name: "Copy response to clipboard" }),
     ).toHaveTextContent("Copied ✓");
   });
+  test("pattern buttons announce the driver and title as separate words", () => {
+    render(<App />);
+    expect(
+      screen.getByRole("button", {
+        name: "Clarity The Executive Function Scaffolder",
+      }),
+    ).toBeInTheDocument();
+  });
 });

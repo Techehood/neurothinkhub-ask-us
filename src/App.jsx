@@ -116,8 +116,8 @@ function PatternPills({ activePattern, onSelect }) {
             onClick={() => onSelect(key)}
             className={isActive ? "pattern-pill is-active" : "pattern-pill"}
           >
-            <span className="pattern-pill-driver">{pattern.driver}:</span>{" "}
-            {pattern.title}
+            <span className="pattern-pill-driver">{pattern.driver}</span>{" "}
+            <span className="pattern-pill-title">{pattern.title}</span>
           </button>
         );
       })}

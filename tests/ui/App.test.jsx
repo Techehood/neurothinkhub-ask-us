@@ -30,7 +30,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     ).toBeVisible();
     expect(screen.queryByText(/\bpilot\b/i)).not.toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Neurodiversity topics" }),
+      screen.getByRole("link", { name: "Explore all topics" }),
     ).toHaveAttribute("href", "https://neurothinkhub.com/spectrum-grid/");
     expect(
       screen.getByText(
@@ -60,7 +60,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     );
     render(<App />);
 
-    await user.click(screen.getByRole("radio", { name: "Educator" }));
+    await user.click(screen.getByRole("radio", { name: "an educator" }));
     await user.type(
       screen.getByRole("textbox", { name: /your question/i }),
       "How can instructions be clearer?",
@@ -70,20 +70,13 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     await screen.findByText("Try this.");
     const request = JSON.parse(fetch.mock.calls[0][1].body);
     expect(request.context).toEqual({ persona: "educator" });
-    expect(screen.getByRole("radio", { name: "Educator" })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
+    expect(screen.getByRole("radio", { name: "an educator" })).toBeChecked();
 
-    await user.click(screen.getByRole("radio", { name: "Manager" }));
-    expect(screen.getByRole("radio", { name: "Manager" })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
-    expect(screen.getByRole("radio", { name: "Educator" })).toHaveAttribute(
-      "aria-checked",
-      "false",
-    );
+    await user.click(screen.getByRole("radio", { name: "a manager" }));
+    expect(screen.getByRole("radio", { name: "a manager" })).toBeChecked();
+    expect(
+      screen.getByRole("radio", { name: "an educator" }),
+    ).not.toBeChecked();
   });
 
   test("provides accessible names, text loading status, a polite completion announcement and predictable answer focus", async () => {
@@ -96,7 +89,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
 
     expect(
       screen.getByRole("textbox", { name: /your question/i }),
-    ).toHaveAttribute("maxlength", "1500");
+    ).toHaveAttribute("maxlength", "500");
     expect(
       screen.getByRole("button", { name: /^send message$/i }),
     ).toBeDisabled();
@@ -428,9 +421,10 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     expect(screen.getByRole("textbox", { name: /your question/i })).toHaveValue(
       "",
     );
+    // The escape hatch stays visible so a visitor can always start fresh.
     expect(
-      screen.queryByRole("button", { name: /start a blank conversation/i }),
-    ).toBeNull();
+      screen.getByRole("button", { name: /start a blank conversation/i }),
+    ).toBeInTheDocument();
 
     confirm.mockClear();
     await user.click(
@@ -481,16 +475,19 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     expect(screen.queryByText(/share who you are/i)).toBeNull();
   });
 
-  test("an active pattern hides the audience choice and does not send it", async () => {
+  test("an active pattern stacks with the chosen role and topic and sends all three", async () => {
     const user = userEvent.setup();
     fetch.mockReturnValueOnce(jsonResponse({ reply: "Calm.", answerId: "a" }));
     render(<App />);
 
-    await user.click(screen.getByRole("radio", { name: "Manager" }));
+    await user.click(screen.getByRole("radio", { name: "a manager" }));
+    await user.click(screen.getByRole("radio", { name: "ADHD" }));
     await user.click(
       screen.getByRole("button", { name: /sensory-sensitive/i }),
     );
-    expect(screen.queryByRole("radiogroup", { name: "I am…" })).toBeNull();
+    expect(
+      screen.getByRole("radiogroup", { name: "I am…" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /speak your question/i }),
     ).toBeVisible();
@@ -498,9 +495,11 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     await user.click(screen.getByRole("button", { name: /send message/i }));
     await screen.findByText("Calm.");
     const request = JSON.parse(fetch.mock.calls[0][1].body);
-    expect(request.context).toEqual({});
+    expect(request.context).toEqual({ persona: "manager" });
     expect(request.patternKey).toBe("sensory");
+    expect(request.topicKey).toBe("adhd");
   });
+
   test("copies the full answer and confirms for two seconds", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
@@ -560,5 +559,165 @@ describe("Ask NeuroThinkHub pilot UI", () => {
         name: "Clarity The Executive Function Scaffolder",
       }),
     ).toBeInTheDocument();
+  });
+
+  test("announces what each column does and shows every subtitle", () => {
+    render(<App />);
+    expect(screen.getByText("Ask about a condition")).toBeVisible();
+    expect(screen.getByText("Describe what's happening")).toBeVisible();
+    expect(screen.getByText("Tell us who's asking")).toBeVisible();
+    expect(
+      screen.getByText("Topics column, sets condition context"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Patterns column, opens Ask conversation"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("I am… column, sets role context"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/support options/i)).toBeNull();
+  });
+
+  test("shows the four CRAA categories with their pick-this-when text", () => {
+    render(<App />);
+    for (const tag of ["Clarity", "Regulation", "Authenticity", "Agency"]) {
+      expect(
+        screen.getByRole("button", { name: new RegExp(`^${tag} The `) }),
+      ).toBeInTheDocument();
+    }
+    expect(screen.getByText(/^Pick this when a task feels huge/)).toBeVisible();
+  });
+
+  test("topics are pick-one and Just ask clears the topic", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("radio", { name: "ADHD" }));
+    await user.click(screen.getByRole("radio", { name: "Dyslexia" }));
+    expect(screen.getByRole("radio", { name: "Dyslexia" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "ADHD" })).not.toBeChecked();
+
+    await user.click(screen.getByRole("button", { name: "Just ask" }));
+    expect(screen.getByRole("radio", { name: "Dyslexia" })).not.toBeChecked();
+    expect(
+      screen.getByRole("textbox", { name: /your question/i }),
+    ).toHaveFocus();
+  });
+
+  test("a topic and role change the suggested prompts", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(
+      screen.getByRole("radio", { name: "a parent or family member" }),
+    );
+    await user.click(screen.getByRole("radio", { name: "ADHD" }));
+    expect(
+      screen.getByRole("button", { name: "What helps at home with ADHD?" }),
+    ).toBeVisible();
+  });
+
+  test("exploring is a real choice that sends no role", async () => {
+    const user = userEvent.setup();
+    fetch.mockReturnValueOnce(jsonResponse({ reply: "Ok.", answerId: "a" }));
+    render(<App />);
+
+    await user.click(screen.getByRole("radio", { name: /exploring/i }));
+    await user.type(
+      screen.getByRole("textbox", { name: /your question/i }),
+      "Hello{Enter}",
+    );
+    await screen.findByText("Ok.");
+    expect(JSON.parse(fetch.mock.calls[0][1].body).context).toEqual({});
+  });
+
+  test("?topic= and ?role= preload together without sending anything", async () => {
+    window.history.replaceState(null, "", "/?topic=adhd&role=parent");
+    render(<App />);
+
+    expect(screen.getByRole("radio", { name: "ADHD" })).toBeChecked();
+    expect(
+      screen.getByRole("radio", { name: "a parent or family member" }),
+    ).toBeChecked();
+    expect(fetch).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("button", { name: "What helps at home with ADHD?" }),
+    ).toBeVisible();
+  });
+
+  test("a condition role id also sets the matching topic, and an explicit topic wins", () => {
+    window.history.replaceState(null, "", "/?role=adhd");
+    const { unmount } = render(<App />);
+    expect(screen.getByRole("radio", { name: "ADHD" })).toBeChecked();
+    expect(
+      screen.getByRole("radio", { name: "a neurodivergent person" }),
+    ).toBeChecked();
+    unmount();
+
+    window.history.replaceState(null, "", "/?role=adhd&topic=dyslexia");
+    render(<App />);
+    expect(screen.getByRole("radio", { name: "Dyslexia" })).toBeChecked();
+  });
+
+  test("?pattern= accepts the CRAA ids and ?question= only pre-fills", () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/?pattern=regulation&question=Too%20loud%20at%20work",
+    );
+    render(<App />);
+
+    expect(screen.getByText(/shaping responses for/i)).toHaveTextContent(
+      "The Sensory-Sensitive Worker",
+    );
+    expect(screen.getByRole("textbox", { name: /your question/i })).toHaveValue(
+      "Too loud at work",
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  test("unknown or unsafe parameters are ignored and the app starts blank", () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/?topic=__proto__&role=admin&pattern=drop;table",
+    );
+    render(<App />);
+
+    expect(screen.getByRole("textbox", { name: /your question/i })).toHaveValue(
+      "",
+    );
+    expect(screen.queryByText(/shaping responses for/i)).toBeNull();
+    for (const radio of screen.getAllByRole("radio")) {
+      expect(radio).not.toBeChecked();
+    }
+  });
+
+  test("the character counter turns amber at 400 and terracotta at 480, with a gentle stop at 500", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const box = screen.getByRole("textbox", { name: /your question/i });
+
+    await user.click(box);
+    await user.paste("a".repeat(399));
+    expect(screen.getByText("399 of 500 characters")).not.toHaveClass(
+      "is-warn",
+    );
+    await user.paste("a");
+    expect(screen.getByText("400 of 500 characters")).toHaveClass("is-warn");
+    await user.paste("a".repeat(80));
+    expect(screen.getByText("480 of 500 characters")).toHaveClass("is-alert");
+    expect(screen.queryByText(/limit for one question/i)).toBeNull();
+    await user.paste("a".repeat(20));
+    expect(screen.getByText(/limit for one question/i)).toBeVisible();
+    expect(box.value).toHaveLength(500);
+  });
+
+  test("a paste that overflows the limit shows the gentle message", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("textbox", { name: /your question/i }));
+    await user.paste("b".repeat(650));
+    expect(screen.getByText(/limit for one question/i)).toBeVisible();
   });
 });

@@ -3,6 +3,7 @@ import { getPilotConfig } from "./_lib/pilot-config.js";
 import { buildSystemPrompt } from "./_lib/system-prompt.js";
 import { anonymise, checkRequestLimits } from "./_lib/rate-limit.js";
 import { resolvePattern } from "../src/config/patterns.js";
+import { resolveTopic } from "../src/config/topics.js";
 
 const MODEL = "claude-haiku-4-5-20251001";
 const PAUSED_MESSAGE =
@@ -184,6 +185,8 @@ export default async function handler(req, res) {
   const context = cleanContext(req.body?.context);
   // Only the key crosses the trust boundary; guardrail text comes from config.
   const pattern = resolvePattern(req.body?.patternKey);
+  // Same rule for topics: a key from the allowlist, never client text.
+  const topic = resolveTopic(req.body?.topicKey);
   const history = cleanHistory(req.body?.history, config.maxQuestionCharacters);
   const messages = [...history, { role: "user", content: question }];
   const controller = new AbortController();
@@ -212,6 +215,7 @@ export default async function handler(req, res) {
           context,
           config.approvedResourceHosts,
           pattern,
+          topic,
         ),
         messages,
       }),

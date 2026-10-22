@@ -447,6 +447,60 @@ describe("POST /api/chat", () => {
     expect(providerRequest.system).not.toMatch(/no more than 150 words/i);
   });
 
+  test("adds an allowlisted topic to the system prompt and drops unknown ones", async () => {
+    const providerFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ content: [{ type: "text", text: "Answer" }] }),
+    });
+    vi.stubGlobal("fetch", providerFetch);
+    const handler = await loadHandler();
+
+    await call(handler, {
+      question: "What helps?",
+      sessionId: "session-topic-adhd-0001",
+      topicKey: "adhd",
+    });
+    const withTopic = JSON.parse(providerFetch.mock.calls[0][1].body).system;
+    expect(withTopic).toMatch(/Topic the visitor chose: ADHD/);
+    expect(withTopic).toMatch(/non-diagnostic/);
+
+    await call(handler, {
+      question: "What helps?",
+      sessionId: "session-topic-bad-00001",
+      topicKey: "<script>",
+    });
+    const without = JSON.parse(providerFetch.mock.calls[1][1].body).system;
+    expect(without).not.toMatch(/Topic the visitor chose/);
+  });
+
+  test("skips the HR and L&D mandatory block when a pattern is active", async () => {
+    const providerFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ content: [{ type: "text", text: "Answer" }] }),
+    });
+    vi.stubGlobal("fetch", providerFetch);
+    const handler = await loadHandler();
+
+    const plain = await call(handler, {
+      question: "Help",
+      sessionId: "session-hr-plain-00001",
+      context: { persona: "hr-ld" },
+    });
+    const withPattern = await call(handler, {
+      question: "Help",
+      sessionId: "session-hr-pattern-001",
+      context: { persona: "hr-ld" },
+      patternKey: "sensory",
+    });
+    expect(plain.statusCode).toBe(200);
+    expect(withPattern.statusCode).toBe(200);
+    const [a, b] = providerFetch.mock.calls.map(
+      (c) => JSON.parse(c[1].body).system,
+    );
+    expect(b.length).not.toBe(a.length);
+    expect(b).toMatch(/ACTIVE PATTERN OF NEED/);
+  });
+
   test("caps a pattern budget at the configured maximum", async () => {
     const providerFetch = vi.fn().mockResolvedValue({
       ok: true,

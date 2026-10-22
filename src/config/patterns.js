@@ -11,13 +11,14 @@ export const ALLOWED_PATTERN_KEYS = Object.freeze([
 
 /** @typedef {"scaffolder" | "sensory" | "masking" | "translator"} PatternKey */
 
-/** @typedef {"Clarity" | "Safety" | "Agency"} CoreDriver */
+/** @typedef {"Clarity" | "Regulation" | "Authenticity" | "Agency"} CoreDriver */
 
 /**
  * @typedef {object} PatternPersonaConfig
  * @property {PatternKey} key
  * @property {CoreDriver} driver
  * @property {string} title
+ * @property {string} pickWhen
  * @property {string} humanVoice
  * @property {string} seedPrompt
  * @property {string} editableHint
@@ -30,6 +31,8 @@ export const PATTERNS_CONFIG = Object.freeze({
     key: "scaffolder",
     driver: "Clarity",
     title: "The Executive Function Scaffolder",
+    pickWhen:
+      "Pick this when a task feels huge, you can’t start, or you’ve lost track of the next step.",
     humanVoice: "“I know what I need to do, but I can’t organise the steps.”",
     seedPrompt:
       "I need to [describe your task]. The steps feel tangled. Help me organise a clear way forward.",
@@ -45,14 +48,16 @@ MANDATORY RESPONSE SHAPE:
 
   sensory: {
     key: "sensory",
-    driver: "Safety",
+    driver: "Regulation",
     title: "The Sensory-Sensitive Worker",
+    pickWhen:
+      "Pick this when lights, noise, meetings or your workspace are draining you faster than the work itself.",
     humanVoice: "“The environment already drains me.”",
     seedPrompt:
       "Everything feels like too much. Help me handle [insert task] without it getting worse.",
     editableHint:
       "Pattern of need active: Sensory-Sensitive Worker. Edit the bracketed text above before sending, or clear to start fresh.",
-    systemGuardrail: `ACTIVE PATTERN OF NEED: The Sensory-Sensitive Worker (Core Driver: Safety).
+    systemGuardrail: `ACTIVE PATTERN OF NEED: The Sensory-Sensitive Worker (Core Driver: Regulation).
 MANDATORY RESPONSE SHAPE:
 1. Keep the entire response strictly under 100 words.
 2. Respond in short prose paragraphs only, using short, calm sentences.
@@ -65,14 +70,16 @@ MANDATORY RESPONSE SHAPE:
 
   masking: {
     key: "masking",
-    driver: "Safety",
+    driver: "Authenticity",
     title: "The Masking Professional",
+    pickWhen:
+      "Pick this when you’re exhausted from performing “fine” at work and don’t know how to stop.",
     humanVoice: "“I don’t want people to know I’m struggling.”",
     seedPrompt:
       "I need to work out how to say [insert situation] without over-explaining.",
     editableHint:
       "Pattern of need active: Masking Professional. Edit the bracketed text above before sending, or clear to start fresh.",
-    systemGuardrail: `ACTIVE PATTERN OF NEED: The Masking Professional (Core Driver: Safety).
+    systemGuardrail: `ACTIVE PATTERN OF NEED: The Masking Professional (Core Driver: Authenticity).
 MANDATORY RESPONSE SHAPE:
 1. Provide a safe, non-judgmental drafting space.
 2. Offer exactly 2 distinct tone options (e.g., Option A: Warm & Brief; Option B: Direct & Matter-of-Fact) that protect reasonable workplace needs without over-polishing or apologising.
@@ -85,6 +92,8 @@ MANDATORY RESPONSE SHAPE:
     key: "translator",
     driver: "Agency",
     title: "The Creative Translator",
+    pickWhen:
+      "Pick this when your ideas land wrong, feel dismissed, or get lost between your head and the room.",
     humanVoice: "“I can see the idea, but I need help expressing it.”",
     seedPrompt:
       "My thoughts are rough: [paste or type here]. Help me shape them without losing my voice.",
@@ -99,6 +108,15 @@ MANDATORY RESPONSE SHAPE:
   },
 });
 
+// Friendly ids used by Baby Ask buttons and the CRAA card names. The original
+// keys keep working, so existing links are unaffected.
+const PATTERN_ALIASES = Object.freeze({
+  clarity: "scaffolder",
+  regulation: "sensory",
+  authenticity: "masking",
+  agency: "translator",
+});
+
 /**
  * Strict allowlist validator for ?pattern= URL parameter.
  * Unknown, empty, or malformed values return null silently so the app falls back to a blank conversation.
@@ -109,7 +127,10 @@ export function resolvePattern(rawParam) {
   if (!rawParam || typeof rawParam !== "string") {
     return null;
   }
-  const normalised = rawParam.trim().toLowerCase();
+  const trimmed = rawParam.trim().toLowerCase();
+  const normalised = Object.hasOwn(PATTERN_ALIASES, trimmed)
+    ? PATTERN_ALIASES[trimmed]
+    : trimmed;
   if (ALLOWED_PATTERN_KEYS.includes(normalised)) {
     return PATTERNS_CONFIG[/** @type {PatternKey} */ (normalised)];
   }

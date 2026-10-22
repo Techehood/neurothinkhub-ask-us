@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { PATTERNS_CONFIG, resolvePattern } from "./config/patterns.js";
+import {
+  PatternColumn,
+  RoleColumn,
+  TopicColumn,
+  useIsNarrow,
+} from "./components/SelectorColumns.jsx";
+import { MAX_QUESTION_CHARACTERS, parseAskParams } from "./config/askParams.js";
+import { resolvePattern } from "./config/patterns.js";
+import { EXPLORING_KEY } from "./config/roles.js";
+import { getStarterPrompts } from "./config/starters.js";
+import { resolveTopic } from "./config/topics.js";
 import "./styles.css";
 
-const MAX_QUESTION_CHARACTERS = 1500;
-
-const PERSONA_OPTIONS = [
-  ["neurodivergent", "Neurodivergent"],
-  ["manager", "Manager"],
-  ["hr-ld", "HR / L&D"],
-  ["parent-family", "Parent / Family"],
-  ["educator", "Educator"],
-  ["entrepreneur", "Entrepreneur"],
-  ["ally-professional", "Ally / Professional"],
-];
+// Count colours: amber from 400, terracotta from 480 (spec).
+const COUNT_WARN_AT = 400;
+const COUNT_ALERT_AT = 480;
 
 const VOICE_MESSAGES = {
   unsupported:
@@ -59,161 +61,21 @@ function StopIcon() {
   );
 }
 
-const STARTER_PROMPTS = [
-  "What could make it easier to start a difficult task?",
-  "How can instructions be made clearer and easier to follow?",
-  "What practical support could help in a busy environment?",
-];
-
-const SPECTRUM_GRID_URL = "https://neurothinkhub.com/spectrum-grid/";
-
-const SIDE_ITEMS = {
-  left: [
-    { label: "ADHD", href: SPECTRUM_GRID_URL },
-    { label: "Dyslexia", href: SPECTRUM_GRID_URL },
-    { label: "Autism", href: SPECTRUM_GRID_URL },
-    { label: "Dyspraxia", href: SPECTRUM_GRID_URL },
-    { label: "Dyscalculia", href: SPECTRUM_GRID_URL },
-    { label: "Sensory processing", href: SPECTRUM_GRID_URL },
-  ],
-  right: [
-    { label: "Self-discovery" },
-    { label: "Workplace tools" },
-    { label: "Coaching" },
-    { label: "Community" },
-    { label: "Workshops" },
-  ],
-};
-
 const DRAFT_KEPT_MESSAGE =
   "Your draft is still in the text box below so you will not lose your thoughts.";
 
-function readPatternFromUrl() {
+function readInitialSelection() {
   try {
-    return resolvePattern(
-      new URLSearchParams(window.location.search).get("pattern"),
-    );
+    return parseAskParams(window.location.search);
   } catch {
-    return null;
+    return { topic: null, pattern: null, role: "", question: "" };
   }
-}
-
-function PatternPills({ activePattern, onSelect }) {
-  return (
-    <div
-      className="pattern-pills"
-      role="group"
-      aria-label="Shape responses to a pattern of need"
-    >
-      {Object.keys(PATTERNS_CONFIG).map((key) => {
-        const pattern = PATTERNS_CONFIG[key];
-        const isActive = activePattern?.key === key;
-        return (
-          <button
-            key={key}
-            type="button"
-            aria-pressed={isActive}
-            onClick={() => onSelect(key)}
-            className={isActive ? "pattern-pill is-active" : "pattern-pill"}
-          >
-            <span className="pattern-pill-driver">{pattern.driver}</span>{" "}
-            <span className="pattern-pill-title">{pattern.title}</span>
-          </button>
-        );
-      })}
-    </div>
-  );
 }
 
 function createSessionId() {
   if (globalThis.crypto?.randomUUID)
     return `session_${globalThis.crypto.randomUUID()}`;
   return `session_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-}
-
-function PersonaSelector({ persona, onChange }) {
-  return (
-    <section className="persona-panel" aria-labelledby="persona-heading">
-      <div className="section-heading-row">
-        <div>
-          <h2 id="persona-heading">I am…</h2>
-          <p>
-            Choose one so answers can speak to your situation. This is optional.
-          </p>
-        </div>
-        {persona && (
-          <button
-            className="text-button"
-            type="button"
-            onClick={() => onChange("")}
-          >
-            Skip / clear
-          </button>
-        )}
-      </div>
-      <div className="persona-grid" role="radiogroup" aria-label="I am…">
-        {PERSONA_OPTIONS.map(([value, label]) => {
-          const isActive = persona === value;
-          return (
-            <button
-              key={value}
-              type="button"
-              role="radio"
-              aria-checked={isActive}
-              className={isActive ? "persona-chip is-active" : "persona-chip"}
-              onClick={() => onChange(isActive ? "" : value)}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function SidePanel({ title, titleHref, items }) {
-  return (
-    <aside className="side-panel" aria-label={title}>
-      <div className="tree-mark" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
-      <h2>
-        {titleHref ? (
-          <a
-            className="side-panel-link"
-            href={titleHref}
-            target="_top"
-            rel="noopener"
-          >
-            {title}
-          </a>
-        ) : (
-          title
-        )}
-      </h2>
-      <ul>
-        {items.map((item) => (
-          <li key={item.label}>
-            {item.href ? (
-              <a
-                className="side-panel-link"
-                href={item.href}
-                target="_top"
-                rel="noopener"
-              >
-                {item.label}
-              </a>
-            ) : (
-              item.label
-            )}
-          </li>
-        ))}
-      </ul>
-    </aside>
-  );
 }
 
 function renderInlineFormatting(text, keyPrefix) {
@@ -434,11 +296,22 @@ function FeedbackControls({ message, conversation }) {
 }
 
 export default function App() {
-  const [persona, setPersona] = useState("");
+  // Deep links (?topic= ?pattern= ?role= ?question=) preload these once.
+  const [initial] = useState(readInitialSelection);
+  const [topic, setTopic] = useState(initial.topic);
+  const [roleChoice, setRoleChoice] = useState(initial.role);
   const [messages, setMessages] = useState([]);
-  const [activePattern, setActivePattern] = useState(readPatternFromUrl);
-  const [input, setInput] = useState(() => activePattern?.seedPrompt ?? "");
-  const [isPreFilled, setIsPreFilled] = useState(() => Boolean(activePattern));
+  const [activePattern, setActivePattern] = useState(initial.pattern);
+  const [input, setInput] = useState(
+    () => initial.question || initial.pattern?.seedPrompt || "",
+  );
+  const [isPreFilled, setIsPreFilled] = useState(
+    () => !initial.question && Boolean(initial.pattern),
+  );
+  const [pasteTrimmed, setPasteTrimmed] = useState(false);
+  const narrow = useIsNarrow();
+  // "Exploring" is a real choice that adds no role context.
+  const persona = roleChoice && roleChoice !== EXPLORING_KEY ? roleChoice : "";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [announcement, setAnnouncement] = useState("");
@@ -482,8 +355,8 @@ export default function App() {
     setAnnouncement("");
 
     try {
-      // An active pattern shapes the answer; audience labels would muddle it.
-      const mergedContext = persona && !activePattern ? { persona } : {};
+      // Role, topic and pattern stack: the server adds each to the prompt.
+      const mergedContext = persona ? { persona } : {};
 
       const response = await fetch("/api/chat", {
         method: "POST",
@@ -494,6 +367,7 @@ export default function App() {
           context: mergedContext,
           sessionId: sessionIdRef.current,
           ...(activePattern ? { patternKey: activePattern.key } : {}),
+          ...(topic ? { topicKey: topic.key } : {}),
         }),
       });
       const data = await response.json();
@@ -579,6 +453,17 @@ export default function App() {
       setInput(matched.seedPrompt);
       setIsPreFilled(true);
     }
+    // Opening the conversation: put the cursor where the visitor types next.
+    inputRef.current?.focus();
+  }
+
+  function handleTopicChange(key) {
+    setTopic(resolveTopic(key));
+  }
+
+  function handleJustAsk() {
+    setTopic(null);
+    inputRef.current?.focus();
   }
 
   // Shared by the banner dismiss and "Start a blank conversation".
@@ -602,6 +487,8 @@ export default function App() {
     )
       return;
     clearPattern();
+    setTopic(null);
+    setRoleChoice("");
     setMessages([]);
     setInput("");
     setError("");
@@ -615,33 +502,39 @@ export default function App() {
     content,
   }));
 
+  const starterPrompts = getStarterPrompts({
+    topicLabel: topic?.label,
+    role: persona,
+  });
+  const countLevel =
+    input.length >= COUNT_ALERT_AT
+      ? "alert"
+      : input.length >= COUNT_WARN_AT
+        ? "warn"
+        : "";
+  const limitReached = input.length >= MAX_QUESTION_CHARACTERS || pasteTrimmed;
+
+  function handlePaste(event) {
+    const pasted = event.clipboardData?.getData("text") ?? "";
+    const field = event.currentTarget;
+    const replaced = (field.selectionEnd ?? 0) - (field.selectionStart ?? 0);
+    if (input.length - replaced + pasted.length > MAX_QUESTION_CHARACTERS) {
+      setPasteTrimmed(true);
+    }
+  }
+
   const placeholder = listening
     ? "Listening…"
     : "Describe your situation or ask a question…";
 
   return (
     <div className="app-shell">
-      <SidePanel
-        title="Neurodiversity topics"
-        titleHref={SPECTRUM_GRID_URL}
-        items={SIDE_ITEMS.left}
-      />
-
       <main className="chat-card">
         <header className="app-header">
           <div className="title-row">
             <div>
               <h1>Ask NeuroThinkHub</h1>
             </div>
-            {(messages.length > 0 || activePattern) && (
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={startAgain}
-              >
-                Start a blank conversation
-              </button>
-            )}
           </div>
           <div
             className="pilot-notice"
@@ -659,15 +552,33 @@ export default function App() {
             Protect your privacy: do not submit names, addresses, medical
             records or confidential workplace information.
           </p>
-          <PatternPills
-            activePattern={activePattern}
-            onSelect={handlePatternSelect}
-          />
         </header>
 
-        {!activePattern && (
-          <PersonaSelector persona={persona} onChange={setPersona} />
-        )}
+        <div className="selector-grid">
+          <TopicColumn
+            topic={topic}
+            onChange={handleTopicChange}
+            onJustAsk={handleJustAsk}
+            narrow={narrow}
+          />
+          <PatternColumn
+            activePattern={activePattern}
+            onSelect={handlePatternSelect}
+            narrow={narrow}
+          />
+          <RoleColumn
+            roleChoice={roleChoice}
+            onChange={setRoleChoice}
+            narrow={narrow}
+          />
+        </div>
+
+        <p className="escape-hatch">
+          Not sure which fits?{" "}
+          <button type="button" className="text-button" onClick={startAgain}>
+            Start a blank conversation
+          </button>
+        </p>
 
         <section className="conversation" aria-label="Conversation">
           {activePattern && (
@@ -697,7 +608,7 @@ export default function App() {
           {messages.length === 0 && !input.trim() && (
             <div className="starters">
               <p>Ask your own question now, or try one of these:</p>
-              {STARTER_PROMPTS.map((prompt) => (
+              {starterPrompts.map((prompt) => (
                 <button
                   type="button"
                   key={prompt}
@@ -776,13 +687,18 @@ export default function App() {
               ref={inputRef}
               className={isPreFilled ? "is-prefilled" : undefined}
               aria-describedby={
-                isPreFilled && activePattern ? "editable-cue" : undefined
+                isPreFilled && activePattern
+                  ? "editable-cue character-count"
+                  : "character-count"
               }
               value={input}
               onChange={(event) => {
                 setInput(event.target.value);
                 if (isPreFilled) setIsPreFilled(false);
+                if (event.target.value.length < MAX_QUESTION_CHARACTERS)
+                  setPasteTrimmed(false);
               }}
+              onPaste={handlePaste}
               onKeyDown={handleKeyDown}
               disabled={loading}
               maxLength={MAX_QUESTION_CHARACTERS}
@@ -815,13 +731,24 @@ export default function App() {
               {voiceMessage}
             </p>
           )}
-          <p className="character-count">
+          <p
+            className={
+              countLevel
+                ? `character-count is-${countLevel}`
+                : "character-count"
+            }
+            id="character-count"
+          >
             {input.length} of {MAX_QUESTION_CHARACTERS} characters
           </p>
+          {limitReached && (
+            <p className="limit-message" role="status">
+              That is the limit for one question. You can send this and add more
+              in a follow-up.
+            </p>
+          )}
         </div>
       </main>
-
-      <SidePanel title="Support options" items={SIDE_ITEMS.right} />
     </div>
   );
 }

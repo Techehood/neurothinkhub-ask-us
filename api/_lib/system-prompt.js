@@ -86,8 +86,12 @@ export function buildSystemPrompt(
   context = {},
   approvedHosts = [],
   pattern = null,
+  topic = null,
 ) {
   const selectedContext = [
+    topic
+      ? `Topic the visitor chose: ${topic.label}. Do not assume the visitor has this condition, and keep every answer general and non-diagnostic.`
+      : null,
     context.persona
       ? `Visitor is: ${LABELS.persona[context.persona] || context.persona}`
       : null,
@@ -114,8 +118,10 @@ export function buildSystemPrompt(
     ? `\n\nPersona guidance:\n${personaGuidance}`
     : "";
 
+  // When a pattern is active its response shape wins, so the HR / L&D block
+  // (which needs extra length) is skipped to avoid contradicting it.
   const mandatoryBlock =
-    context.persona === "hr-ld"
+    context.persona === "hr-ld" && !pattern
       ? `\n\nMANDATORY FOR THIS RESPONSE (HR / L&D persona):
 - You MUST name the UK Equality Act 2010 by name in your answer.
 - You MUST signpost Access to Work by name when discussing workplace support.

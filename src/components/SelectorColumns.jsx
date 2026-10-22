@@ -89,9 +89,13 @@ function ColumnPanel({
   );
 }
 
-function RadioChips({ name, label, options, value, onChange }) {
+function RadioChips({ name, label, options, value, onChange, stacked }) {
   return (
-    <div className="chip-list" role="radiogroup" aria-label={label}>
+    <div
+      className={stacked ? "chip-list chip-list-stacked" : "chip-list"}
+      role="radiogroup"
+      aria-label={label}
+    >
       {options.map((option) => (
         <label className="chip" key={option.key}>
           <input
@@ -218,6 +222,7 @@ export function RoleColumn({ roleChoice, onChange, narrow }) {
         options={options}
         value={roleChoice}
         onChange={onChange}
+        stacked
       />
     </ColumnPanel>
   );

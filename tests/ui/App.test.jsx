@@ -563,11 +563,11 @@ describe("Ask NeuroThinkHub pilot UI", () => {
 
   test("announces what each column does and shows every subtitle", () => {
     render(<App />);
-    expect(screen.getByText("Ask about a condition")).toBeVisible();
+    expect(screen.getByText("What would you like to ask about?")).toBeVisible();
     expect(screen.getByText("Describe what's happening")).toBeVisible();
     expect(screen.getByText("Tell us who's asking")).toBeVisible();
     expect(
-      screen.getByText("Topics column, sets condition context"),
+      screen.getByText("Topics column, sets topic context"),
     ).toBeInTheDocument();
     expect(
       screen.getByText("Patterns column, opens Ask conversation"),

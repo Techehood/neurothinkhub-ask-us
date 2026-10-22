@@ -117,8 +117,8 @@ export function TopicColumn({ topic, onChange, onJustAsk, narrow }) {
   return (
     <ColumnPanel
       title="Topics"
-      subtitle="Ask about a condition"
-      description="Topics column, sets condition context"
+      subtitle="What would you like to ask about?"
+      description="Topics column, sets topic context"
       summary={topic ? `Selected: ${topic.label}` : ""}
       narrow={narrow}
     >

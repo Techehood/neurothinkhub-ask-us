@@ -48,7 +48,7 @@ Weekends are lighter by design. Three project blocks + one review block.
 | | | **Weekend day total** | **3h 30m** |
 
 > ⚠️ Weekend = **no new production** (no magazine features, reviews, menu assets). That stops weekend blocks turning into a 9h day.
-> 👉 If your weekend hours differ from 3h 30m, tell me and I'll re‑scale this table only.
+> ✅ **Confirmed:** 3h 30m per weekend day.
 
 ---
 

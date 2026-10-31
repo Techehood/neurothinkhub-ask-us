@@ -1,6 +1,6 @@
 # Six‑Week Portfolio Plan — Re‑scaled to Real Hours
 
-**Window:** Mon 2 Nov – Sun 13 Dec 2026 · six Monday‑start weeks (W1–W6).
+**Window:** **Sun 1 Nov** – Sun 13 Dec 2026 · Day 0 kickoff (Sun 1 Nov) + six Monday‑start weeks (W1–W6).
 **Real hours (reported):** **9h every weekday** + **weekend blocks**. No non‑working days.
 
 **Fixed priority order (never reordered):**
@@ -10,6 +10,19 @@
 - All three primary projects get work **every day, including weekends**.
 - No project ever takes a whole day.
 - Every task starts **NS**. Nothing is **DN** without a link/screenshot.
+
+---
+
+## 0. Day 0 — Sunday 1 Nov kickoff (3h 30m, weekend shape)
+
+| Block | Task (first 15′ micro‑task in **bold**) | Length | Evidence for DN |
+|---|---|---|---|
+| 1️⃣ NeuroThinkHub | **Find and name both shared post templates.** Then create one test post per template. | 60′ | Screenshot of each template + test post URL |
+| 2️⃣ Book Creator | **Open the live file and confirm page 15 is the latest page.** Then read p.1→15 for continuity. | 60′ | Screenshot of p.15 in the live file |
+| 3️⃣ Food Truck | **Open the decision log.** Draft the VAT question to the accountant and schedule it to send Mon 09:00. | 45′ | Link to log + scheduled email |
+| 📋 Setup | Create the ledger (every W1 task = NS). Put Monday's first micro‑task at the top. | 45′ | Link to ledger |
+
+> Effect on W1: Monday's NeuroThinkHub starts at **reproducing the fault** (templates already found). If Day 0 slips, Monday picks it up — log the slip.
 
 ---
 

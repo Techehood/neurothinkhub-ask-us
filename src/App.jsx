@@ -317,6 +317,11 @@ export default function App() {
   const [announcement, setAnnouncement] = useState("");
   const [listening, setListening] = useState(false);
   const [voiceMessage, setVoiceMessage] = useState("");
+  // Explicit, withdrawable agreement to send questions to the AI service.
+  // Held in memory only: it is asked again on every visit and never stored.
+  const [consented, setConsented] = useState(false);
+  const [consentMissing, setConsentMissing] = useState(false);
+  const consentRef = useRef(null);
   const inputRef = useRef(null);
   const newestAnswerRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -345,6 +350,11 @@ export default function App() {
   async function sendMessage(text) {
     const question = (text ?? input).trim();
     if (!question || loading) return;
+    if (!consented) {
+      setConsentMissing(true);
+      consentRef.current?.focus();
+      return;
+    }
 
     const history = messages.map(({ role, content }) => ({ role, content }));
     setMessages((current) => [...current, { role: "user", content: question }]);
@@ -725,6 +735,28 @@ export default function App() {
             >
               {loading ? "Working…" : "Send message"}
             </button>
+          </div>
+          <div className="consent-box">
+            <label className="checkbox-field">
+              <input
+                ref={consentRef}
+                type="checkbox"
+                checked={consented}
+                aria-describedby={consentMissing ? "consent-help" : undefined}
+                onChange={(event) => {
+                  setConsented(event.target.checked);
+                  if (event.target.checked) setConsentMissing(false);
+                }}
+              />
+              I understand Ask uses AI. I agree my questions are sent to
+              Anthropic&apos;s Claude to write replies, and I will not include
+              names or private details.
+            </label>
+            {consentMissing && !consented && (
+              <p className="error-message" id="consent-help" role="alert">
+                Please tick the box above to send your question.
+              </p>
+            )}
           </div>
           {voiceMessage && (
             <p className="voice-message" role="status">

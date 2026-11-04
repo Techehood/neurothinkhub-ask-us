@@ -398,6 +398,19 @@ h2 {
   border-radius: 7px;
 }
 
+.consent-box {
+  margin: 10px 0 0;
+  padding: 10px 14px;
+  color: var(--text);
+  background: var(--cream);
+  border-left: 3px solid var(--aubergine);
+  border-radius: 10px;
+}
+
+.consent-box .error-message {
+  margin-top: 8px;
+}
+
 .checkbox-field {
   display: flex;
   align-items: flex-start;

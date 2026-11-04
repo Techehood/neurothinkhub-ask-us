@@ -1,10 +1,26 @@
-import { act, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import App from "../../src/App.jsx";
 
 function jsonResponse(body, ok = true) {
   return Promise.resolve({ ok, json: () => Promise.resolve(body) });
+}
+
+const CONSENT_LABEL = /i understand ask uses ai/i;
+
+// Most tests are about answers, so they start with the consent box ticked.
+function renderApp() {
+  const result = render(<App />);
+  fireEvent.click(screen.getByRole("checkbox", { name: CONSENT_LABEL }));
+  return result;
 }
 
 beforeEach(() => {
@@ -23,7 +39,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     fetch.mockReturnValueOnce(
       jsonResponse({ reply: "A manageable answer.", answerId: "ans_1" }),
     );
-    render(<App />);
+    renderApp();
 
     expect(
       screen.getByText(/ask neurothinkhub provides general guidance/i),
@@ -58,7 +74,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     fetch.mockReturnValueOnce(
       jsonResponse({ reply: "Try this.", answerId: "ans_2" }),
     );
-    render(<App />);
+    renderApp();
 
     await user.click(screen.getByRole("radio", { name: "an educator" }));
     await user.type(
@@ -85,7 +101,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     fetch.mockReturnValueOnce(
       new Promise((resolve) => (finishRequest = resolve)),
     );
-    render(<App />);
+    renderApp();
 
     expect(
       screen.getByRole("textbox", { name: /your question/i }),
@@ -133,7 +149,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
         answerId: "ans_formatted",
       }),
     );
-    render(<App />);
+    renderApp();
 
     await user.type(
       screen.getByRole("textbox", { name: /your question/i }),
@@ -160,7 +176,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
         }),
       )
       .mockReturnValueOnce(jsonResponse({ recorded: true }));
-    render(<App />);
+    renderApp();
 
     await user.type(
       screen.getByRole("textbox", { name: /your question/i }),
@@ -208,7 +224,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
       jsonResponse({ reply: "One answer.", answerId: "ans_4" }),
     );
     confirm.mockReturnValueOnce(false).mockReturnValueOnce(true);
-    render(<App />);
+    renderApp();
 
     await user.type(
       screen.getByRole("textbox", { name: /your question/i }),
@@ -234,7 +250,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
 
   test("shows the mic button with a message when the browser has no voice input", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderApp();
 
     await user.click(
       screen.getByRole("button", { name: /speak your question/i }),
@@ -254,7 +270,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
       stop() {}
     }
     vi.stubGlobal("webkitSpeechRecognition", BlockedRecognition);
-    render(<App />);
+    renderApp();
 
     await user.click(
       screen.getByRole("button", { name: /speak your question/i }),
@@ -274,7 +290,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     fetch
       .mockReturnValueOnce(jsonResponse({ reply: "First.", answerId: "a1" }))
       .mockReturnValueOnce(jsonResponse({ reply: "Second.", answerId: "a2" }));
-    render(<App />);
+    renderApp();
 
     const question = screen.getByRole("textbox", { name: /your question/i });
     await user.type(question, "One{Enter}");
@@ -292,7 +308,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
       window.history.replaceState(null, "", url);
       const user = userEvent.setup();
       fetch.mockReturnValueOnce(jsonResponse({ reply: "Ok.", answerId: "a" }));
-      render(<App />);
+      renderApp();
 
       await user.type(
         screen.getByRole("textbox", { name: /your question/i }),
@@ -311,7 +327,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     fetch.mockReturnValueOnce(
       jsonResponse({ error: "Temporarily unavailable." }, false),
     );
-    render(<App />);
+    renderApp();
 
     const question = screen.getByRole("textbox", { name: /your question/i });
     await user.type(question, "My unsaved thoughts{Enter}");
@@ -329,7 +345,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
   test("pre-fills the seed prompt from ?pattern= with an editable cue that clears on typing", async () => {
     window.history.replaceState(null, "", "/?pattern=translator");
     const user = userEvent.setup();
-    render(<App />);
+    renderApp();
 
     const question = screen.getByRole("textbox", { name: /your question/i });
     expect(question).toHaveValue(
@@ -351,7 +367,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
 
   test("selecting a pattern pill swaps an untouched seed but never overwrites the visitor's own text", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderApp();
     const question = screen.getByRole("textbox", { name: /your question/i });
 
     await user.click(
@@ -380,7 +396,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     fetch
       .mockReturnValueOnce(jsonResponse({ reply: "Option A.", answerId: "a1" }))
       .mockReturnValueOnce(jsonResponse({ reply: "Plain.", answerId: "a2" }));
-    render(<App />);
+    renderApp();
     const question = screen.getByRole("textbox", { name: /your question/i });
 
     await user.click(screen.getByRole("button", { name: /send message/i }));
@@ -407,7 +423,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     fetch.mockReturnValueOnce(
       jsonResponse({ reply: "Stage 1.", answerId: "a" }),
     );
-    render(<App />);
+    renderApp();
 
     await user.click(screen.getByRole("button", { name: /send message/i }));
     await screen.findByText("Stage 1.");
@@ -439,7 +455,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
   test("shows suggested questions only while the chat and input are both empty", async () => {
     const user = userEvent.setup();
     fetch.mockReturnValueOnce(jsonResponse({ reply: "Done.", answerId: "a" }));
-    render(<App />);
+    renderApp();
     const starter = () =>
       screen.queryByRole("button", {
         name: "What could make it easier to start a difficult task?",
@@ -458,14 +474,14 @@ describe("Ask NeuroThinkHub pilot UI", () => {
 
   test("hides suggested questions when a pattern pre-fills the input", () => {
     window.history.replaceState(null, "", "/?pattern=sensory");
-    render(<App />);
+    renderApp();
     expect(screen.queryByText(/try one of these/i)).not.toBeInTheDocument();
     expect(
       screen.getByText("This space adapts to your pattern of need."),
     ).toBeVisible();
   });
   test("blank chat shows the audience choice and mic but no steps or preference dropdowns", () => {
-    render(<App />);
+    renderApp();
     expect(screen.getByRole("radiogroup", { name: "I am…" })).toBeVisible();
     expect(
       screen.getByRole("button", { name: /speak your question/i }),
@@ -478,7 +494,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
   test("an active pattern stacks with the chosen role and topic and sends all three", async () => {
     const user = userEvent.setup();
     fetch.mockReturnValueOnce(jsonResponse({ reply: "Calm.", answerId: "a" }));
-    render(<App />);
+    renderApp();
 
     await user.click(screen.getByRole("radio", { name: "a manager" }));
     await user.click(screen.getByRole("radio", { name: "ADHD" }));
@@ -505,7 +521,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const reply = "Variant 1: Lightly structured\nWhat changed: shorter lines.";
     fetch.mockReturnValueOnce(jsonResponse({ reply, answerId: "a" }));
-    render(<App />);
+    renderApp();
 
     await user.type(
       screen.getByRole("textbox", { name: /your question/i }),
@@ -537,7 +553,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     fetch.mockReturnValueOnce(
       jsonResponse({ reply: "Option A.", answerId: "a" }),
     );
-    render(<App />);
+    renderApp();
 
     await user.type(
       screen.getByRole("textbox", { name: /your question/i }),
@@ -553,7 +569,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     ).toHaveTextContent("Copied ✓");
   });
   test("pattern buttons announce the driver and title as separate words", () => {
-    render(<App />);
+    renderApp();
     expect(
       screen.getByRole("button", {
         name: "Clarity The Executive Function Scaffolder",
@@ -562,7 +578,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
   });
 
   test("announces what each column does and shows every subtitle", () => {
-    render(<App />);
+    renderApp();
     expect(screen.getByText("What would you like to ask about?")).toBeVisible();
     expect(screen.getByText("Describe what's happening")).toBeVisible();
     expect(screen.getByText("Tell us who's asking")).toBeVisible();
@@ -579,7 +595,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
   });
 
   test("shows the four CRAA categories with their pick-this-when text", () => {
-    render(<App />);
+    renderApp();
     for (const tag of ["Clarity", "Regulation", "Authenticity", "Agency"]) {
       expect(
         screen.getByRole("button", { name: new RegExp(`^${tag} The `) }),
@@ -590,7 +606,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
 
   test("topics are pick-one and Just ask clears the topic", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderApp();
 
     await user.click(screen.getByRole("radio", { name: "ADHD" }));
     await user.click(screen.getByRole("radio", { name: "Dyslexia" }));
@@ -606,7 +622,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
 
   test("a topic and role change the suggested prompts", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderApp();
 
     await user.click(
       screen.getByRole("radio", { name: "a parent or family member" }),
@@ -620,7 +636,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
   test("exploring is a real choice that sends no role", async () => {
     const user = userEvent.setup();
     fetch.mockReturnValueOnce(jsonResponse({ reply: "Ok.", answerId: "a" }));
-    render(<App />);
+    renderApp();
 
     await user.click(screen.getByRole("radio", { name: /exploring/i }));
     await user.type(
@@ -633,7 +649,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
 
   test("?topic= and ?role= preload together without sending anything", async () => {
     window.history.replaceState(null, "", "/?topic=adhd&role=parent");
-    render(<App />);
+    renderApp();
 
     expect(screen.getByRole("radio", { name: "ADHD" })).toBeChecked();
     expect(
@@ -647,7 +663,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
 
   test("a condition role id also sets the matching topic, and an explicit topic wins", () => {
     window.history.replaceState(null, "", "/?role=adhd");
-    const { unmount } = render(<App />);
+    const { unmount } = renderApp();
     expect(screen.getByRole("radio", { name: "ADHD" })).toBeChecked();
     expect(
       screen.getByRole("radio", { name: "a neurodivergent person" }),
@@ -655,7 +671,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
     unmount();
 
     window.history.replaceState(null, "", "/?role=adhd&topic=dyslexia");
-    render(<App />);
+    renderApp();
     expect(screen.getByRole("radio", { name: "Dyslexia" })).toBeChecked();
   });
 
@@ -665,7 +681,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
       "",
       "/?pattern=regulation&question=Too%20loud%20at%20work",
     );
-    render(<App />);
+    renderApp();
 
     expect(screen.getByText(/shaping responses for/i)).toHaveTextContent(
       "The Sensory-Sensitive Worker",
@@ -682,7 +698,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
       "",
       "/?topic=__proto__&role=admin&pattern=drop;table",
     );
-    render(<App />);
+    renderApp();
 
     expect(screen.getByRole("textbox", { name: /your question/i })).toHaveValue(
       "",
@@ -695,7 +711,7 @@ describe("Ask NeuroThinkHub pilot UI", () => {
 
   test("the character counter turns amber at 400 and terracotta at 480, with a gentle stop at 500", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderApp();
     const box = screen.getByRole("textbox", { name: /your question/i });
 
     await user.click(box);
@@ -715,9 +731,46 @@ describe("Ask NeuroThinkHub pilot UI", () => {
 
   test("a paste that overflows the limit shows the gentle message", async () => {
     const user = userEvent.setup();
-    render(<App />);
+    renderApp();
     await user.click(screen.getByRole("textbox", { name: /your question/i }));
     await user.paste("b".repeat(650));
     expect(screen.getByText(/limit for one question/i)).toBeVisible();
+  });
+
+  test("asks for agreement before the first question is sent, and again after it is withdrawn", async () => {
+    const user = userEvent.setup();
+    fetch.mockReturnValue(
+      jsonResponse({ reply: "A manageable answer.", answerId: "ans_c" }),
+    );
+    render(<App />);
+
+    const box = screen.getByRole("checkbox", { name: CONSENT_LABEL });
+    expect(box).not.toBeChecked();
+
+    await user.type(
+      screen.getByRole("textbox", { name: /your question/i }),
+      "How do I plan my week?",
+    );
+    await user.click(screen.getByRole("button", { name: /^send message$/i }));
+
+    expect(fetch).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent(/tick the box/i);
+    expect(box).toHaveFocus();
+    expect(screen.getByRole("textbox", { name: /your question/i })).toHaveValue(
+      "How do I plan my week?",
+    );
+
+    await user.click(box);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /^send message$/i }));
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+
+    await user.click(box);
+    await user.type(
+      screen.getByRole("textbox", { name: /your question/i }),
+      "Another question",
+    );
+    await user.click(screen.getByRole("button", { name: /^send message$/i }));
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 });
